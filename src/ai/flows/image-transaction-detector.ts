@@ -43,16 +43,16 @@ const prompt = ai.definePrompt({
 
   Analisis gambar yang diberikan untuk mengekstrak informasi berikut:
 
-  - transactionType: Tentukan apakah gambar tersebut merupakan 'income' (pemasukan) atau 'expense' (pengeluaran).
-  - amount: Ekstrak jumlah transaksi dalam Rupiah (IDR). Jangan sertakan simbol mata uang atau pemisah ribuan.
+  - transactionType: Tentukan apakah ini 'income' (pemasukan) atau 'expense' (pengeluaran).
+  - amount: Ekstrak jumlah total transaksi. Ini harus berupa angka saja, tanpa simbol 'Rp', titik, atau koma. Contohnya, 'Rp125.000' harus diekstrak sebagai 125000. Carilah kata kunci seperti 'TOTAL', 'TOTAL BAYAR', atau 'TAGIHAN'.
   - date: Ekstrak tanggal transaksi dalam format YYYY-MM-DD.
-  - category: Tentukan kategori transaksi yang sesuai (contoh: Makanan, Transportasi, Tagihan, Gaji).
-  - description: Berikan deskripsi singkat tentang transaksi.
+  - category: Berikan kategori yang paling sesuai (contoh: Makanan & Minuman, Transportasi, Tagihan, Belanja, Gaji).
+  - description: Berikan deskripsi singkat dan jelas tentang transaksi. Biasanya ini adalah nama toko atau item utama yang dibeli.
 
   Berikut adalah gambar untuk dianalisis:
   {{media url=photoDataUri}}
 
-  Pastikan outputnya akurat dan terformat dengan baik dalam bahasa Indonesia.
+  Pastikan outputnya akurat dan terformat dengan baik.
 `,
   config: {
     safetySettings: [
