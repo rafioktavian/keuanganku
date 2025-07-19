@@ -56,6 +56,24 @@ type TransactionFormProps = {
   onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
 };
 
+const formatToRupiah = (value: number | string) => {
+  if (typeof value === 'string' && value.startsWith('Rp ')) {
+    return value;
+  }
+  const numberValue = Number(value) || 0;
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numberValue);
+};
+
+const parseFromRupiah = (value: string) => {
+  return Number(value.replace(/[^0-9]/g, ''));
+};
+
+
 export default function TransactionForm({ onAddTransaction }: TransactionFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -65,35 +83,28 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
   const [fundSources, setFundSources] = useState<FundSource[]>([]);
   const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       type: 'expense',
       amount: 0,
-      // date: new Date(), // This causes hydration error
       category: '',
       fundSource: '',
       description: '',
     },
   });
-
+  
   useEffect(() => {
-    if (isClient) {
-      form.reset({
-        type: 'expense',
-        amount: 0,
-        date: new Date(),
-        category: '',
-        fundSource: '',
-        description: '',
-      });
-    }
-  }, [isClient, form]);
-
+    setIsClient(true);
+    form.reset({
+      type: 'expense',
+      amount: 0,
+      date: new Date(),
+      category: '',
+      fundSource: '',
+      description: '',
+    });
+  }, []);
 
   const transactionType = form.watch('type');
 
@@ -111,8 +122,10 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
         form.setValue('category', '');
       }
     };
-    fetchMasterData();
-  }, [transactionType, form]);
+    if (isClient) {
+      fetchMasterData();
+    }
+  }, [transactionType, form, isClient]);
 
   const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -295,7 +308,15 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                 <FormItem>
                   <FormLabel>Jumlah</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="cth: 50000" {...field} value={field.value || ''} />
+                    <Input
+                      type="text"
+                      placeholder="Rp 0"
+                      value={formatToRupiah(field.value || 0)}
+                      onChange={(e) => {
+                        const numericValue = parseFromRupiah(e.target.value);
+                        field.onChange(numericValue);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
