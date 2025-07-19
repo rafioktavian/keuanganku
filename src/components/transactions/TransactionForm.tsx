@@ -63,18 +63,37 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
   const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [fundSources, setFundSources] = useState<FundSource[]>([]);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       type: 'expense',
       amount: 0,
-      date: new Date(),
+      // date: new Date(), // This causes hydration error
       category: '',
       fundSource: '',
       description: '',
     },
   });
+
+  useEffect(() => {
+    if (isClient) {
+      form.reset({
+        type: 'expense',
+        amount: 0,
+        date: new Date(),
+        category: '',
+        fundSource: '',
+        description: '',
+      });
+    }
+  }, [isClient, form]);
+
 
   const transactionType = form.watch('type');
 
@@ -83,10 +102,17 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
       const allCategories = await db.categories.toArray();
       const allFundSources = await db.fundSources.toArray();
       setFundSources(allFundSources);
-      setCategories(allCategories.filter(c => c.type === transactionType));
+      
+      const filteredCategories = allCategories.filter(c => c.type === transactionType);
+      setCategories(filteredCategories);
+
+      // Reset category if it's not in the new list
+      if (!filteredCategories.some(c => c.name === form.getValues('category'))) {
+        form.setValue('category', '');
+      }
     };
     fetchMasterData();
-  }, [transactionType]);
+  }, [transactionType, form]);
 
   const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -101,10 +127,21 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
       const photoDataUri = reader.result as string;
       try {
         const result = await imageTransactionDetector({ photoDataUri });
+        
+        let transactionDate = new Date(result.date);
+        if (isNaN(transactionDate.getTime())) {
+          toast({
+            variant: 'destructive',
+            title: 'Tanggal Tidak Valid',
+            description: 'AI tidak dapat mendeteksi tanggal yang valid. Menggunakan tanggal hari ini.',
+          });
+          transactionDate = new Date();
+        }
+
         form.reset({
           type: result.transactionType,
           amount: result.amount,
-          date: new Date(result.date),
+          date: transactionDate,
           category: result.category,
           description: result.description,
           fundSource: form.getValues('fundSource') // keep existing or let user choose
@@ -139,9 +176,35 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     onAddTransaction(values);
-    form.reset();
+    form.reset({
+      type: 'expense',
+      amount: 0,
+      date: new Date(),
+      category: '',
+      fundSource: '',
+      description: '',
+    });
     setImagePreview(null);
   };
+
+  if (!isClient) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-headline">Tambah Transaksi</CardTitle>
+           <CardDescription>
+            Memuat formulir...
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-96">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
 
   return (
     <Card className="relative overflow-hidden">
@@ -201,7 +264,9 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                   <FormLabel>Tipe Transaksi</FormLabel>
                   <FormControl>
                     <RadioGroup
-                      onValueChange={field.onChange}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                      }}
                       defaultValue={field.value}
                       className="flex space-x-4"
                     >
@@ -230,7 +295,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                 <FormItem>
                   <FormLabel>Jumlah</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="cth: 50000" {...field} />
+                    <Input type="number" placeholder="cth: 50000" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
