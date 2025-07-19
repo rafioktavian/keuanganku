@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, type ChangeEvent } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useRef, type ChangeEvent, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -29,24 +29,27 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Calendar as CalendarIcon, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Upload, Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { imageTransactionDetector, type ImageTransactionOutput } from '@/ai/flows/image-transaction-detector';
+import { imageTransactionDetector } from '@/ai/flows/image-transaction-detector';
 import { useToast } from '@/hooks/use-toast';
-import type { Transaction } from '@/lib/types';
+import type { Transaction, Category, FundSource } from '@/lib/types';
+import { db } from '@/lib/db';
 import Image from 'next/image';
 
 const formSchema = z.object({
   type: z.enum(['income', 'expense'], {
-    required_error: 'Please select a transaction type.',
+    required_error: 'Pilih tipe transaksi.',
   }),
   amount: z.coerce
-    .number({ invalid_type_error: 'Amount must be a number' })
-    .positive({ message: 'Amount must be positive.' }),
-  date: z.date({ required_error: 'A date is required.' }),
-  category: z.string().min(1, { message: 'Category is required.' }),
-  description: z.string().min(1, { message: 'Description is required.' }),
+    .number({ invalid_type_error: 'Jumlah harus berupa angka' })
+    .positive({ message: 'Jumlah harus positif.' }),
+  date: z.date({ required_error: 'Tanggal harus diisi.' }),
+  category: z.string().min(1, { message: 'Kategori harus diisi.' }),
+  fundSource: z.string().min(1, { message: 'Sumber dana harus diisi.' }),
+  description: z.string().min(1, { message: 'Deskripsi harus diisi.' }),
 });
 
 type TransactionFormProps = {
@@ -58,6 +61,8 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [fundSources, setFundSources] = useState<FundSource[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -66,9 +71,22 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
       amount: 0,
       date: new Date(),
       category: '',
+      fundSource: '',
       description: '',
     },
   });
+
+  const transactionType = form.watch('type');
+
+  useEffect(() => {
+    const fetchMasterData = async () => {
+      const allCategories = await db.categories.toArray();
+      const allFundSources = await db.fundSources.toArray();
+      setFundSources(allFundSources);
+      setCategories(allCategories.filter(c => c.type === transactionType));
+    };
+    fetchMasterData();
+  }, [transactionType]);
 
   const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -89,21 +107,21 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
           date: new Date(result.date),
           category: result.category,
           description: result.description,
+          fundSource: form.getValues('fundSource') // keep existing or let user choose
         });
         toast({
-            title: "Success!",
-            description: "Transaction details extracted from image.",
+            title: "Sukses!",
+            description: "Detail transaksi berhasil diekstrak dari gambar.",
         })
       } catch (error) {
         console.error('AI Error:', error);
         toast({
           variant: 'destructive',
-          title: 'Extraction Failed',
-          description: 'Could not extract details from the image. Please enter them manually.',
+          title: 'Ekstraksi Gagal',
+          description: 'Tidak dapat mengekstrak detail dari gambar. Silakan masukkan secara manual.',
         });
       } finally {
         setIsProcessing(false);
-        // Clear the file input
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -112,8 +130,8 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
     reader.onerror = () => {
         toast({
             variant: 'destructive',
-            title: 'File Error',
-            description: 'Could not read the image file.',
+            title: 'Gagal Membaca File',
+            description: 'Tidak dapat membaca file gambar.',
         });
         setIsProcessing(false);
     }
@@ -130,13 +148,13 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
         {isProcessing && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="mt-4 text-lg text-primary-foreground">Analyzing your receipt...</p>
+                <p className="mt-4 text-lg text-foreground">Menganalisis struk Anda...</p>
             </div>
         )}
       <CardHeader>
-        <CardTitle className="font-headline">Add Transaction</CardTitle>
+        <CardTitle className="font-headline">Tambah Transaksi</CardTitle>
         <CardDescription>
-          Upload a receipt or enter details manually.
+          Unggah struk atau masukkan detail secara manual.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -158,21 +176,20 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                 >
                     {imagePreview ? (
                         <div className="relative w-full h-40 rounded-md overflow-hidden">
-                            <Image src={imagePreview} alt="Receipt preview" layout="fill" objectFit="contain" />
+                            <Image src={imagePreview} alt="Pratinjau Struk" layout="fill" objectFit="contain" />
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
                             <Upload className="h-10 w-10" />
                             <p className="text-center font-semibold">
-                                <span className="text-primary">Upload a receipt</span>
+                                <span className="text-primary">Unggah Struk</span>
                             </p>
-                            <p className="text-xs text-center">Let AI fill out the form for you</p>
+                            <p className="text-xs text-center">Biar AI yang mengisi form untukmu</p>
                         </div>
                     )}
                 </Card>
             </label>
         </div>
-
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -181,7 +198,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
               name="type"
               render={({ field }) => (
                 <FormItem className="space-y-3">
-                  <FormLabel>Transaction Type</FormLabel>
+                  <FormLabel>Tipe Transaksi</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -192,13 +209,13 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                         <FormControl>
                           <RadioGroupItem value="income" />
                         </FormControl>
-                        <FormLabel className="font-normal">Income</FormLabel>
+                        <FormLabel className="font-normal">Pemasukan</FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl>
                           <RadioGroupItem value="expense" />
                         </FormControl>
-                        <FormLabel className="font-normal">Expense</FormLabel>
+                        <FormLabel className="font-normal">Pengeluaran</FormLabel>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
@@ -211,9 +228,9 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Amount</FormLabel>
+                  <FormLabel>Jumlah</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="e.g., 50000" {...field} />
+                    <Input type="number" placeholder="cth: 50000" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -224,7 +241,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Date</FormLabel>
+                  <FormLabel>Tanggal</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -235,11 +252,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                             !field.value && 'text-muted-foreground'
                           )}
                         >
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
+                          {field.value ? format(field.value, 'PPP') : <span>Pilih tanggal</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
@@ -249,9 +262,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date('2000-01-01')
-                        }
+                        disabled={(date) => date > new Date() || date < new Date('2000-01-01')}
                         initialFocus
                       />
                     </PopoverContent>
@@ -265,10 +276,41 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Food, Transport, Salary" {...field} />
-                  </FormControl>
+                  <FormLabel>Kategori</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih Kategori" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="fundSource"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sumber Dana</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih Sumber Dana" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {fundSources.map((fs) => (
+                        <SelectItem key={fs.id} value={fs.name}>{fs.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -278,10 +320,10 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Deskripsi</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="e.g., Lunch with colleagues"
+                      placeholder="cth: Makan siang bersama kolega"
                       {...field}
                     />
                   </FormControl>
@@ -290,7 +332,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
               )}
             />
             <Button type="submit" className="w-full" disabled={isProcessing}>
-              Add Transaction
+              Tambah Transaksi
             </Button>
           </form>
         </Form>

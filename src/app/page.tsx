@@ -1,41 +1,46 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Transaction, TransactionType } from '@/lib/types';
 import TransactionForm from '@/components/transactions/TransactionForm';
 import TransactionList from '@/components/transactions/TransactionList';
 import CategorySummary from '@/components/transactions/CategorySummary';
 import Filters from '@/components/transactions/Filters';
 import { addDays, startOfMonth } from 'date-fns';
-
-const initialTransactions: Transaction[] = [
-  { id: '1', type: 'income', amount: 5000000, category: 'Salary', description: 'Monthly Salary', date: new Date('2024-07-01') },
-  { id: '2', type: 'expense', amount: 75000, category: 'Food', description: 'Lunch with colleagues', date: new Date('2024-07-05') },
-  { id: '3', type: 'expense', amount: 250000, category: 'Transport', description: 'Monthly train pass', date: new Date('2024-07-02') },
-  { id: '4', type: 'expense', amount: 1500000, category: 'Bills', description: 'House Rent', date: new Date('2024-07-01') },
-  { id: '5', type: 'expense', amount: 120000, category: 'Entertainment', description: 'Cinema tickets', date: new Date('2024-07-10') },
-  { id: '6', type: 'expense', amount: 50000, category: 'Food', description: 'Coffee', date: new Date('2024-07-12') },
-];
+import { db } from '@/lib/db';
 
 export default function Home() {
-  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filterType, setFilterType] = useState<'all' | TransactionType>('all');
   const [filterDateRange, setFilterDateRange] = useState<'all' | 'this-month' | 'last-30-days'>('all');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      setIsLoading(true);
+      const allTransactions = await db.transactions.toArray();
+      setTransactions(allTransactions.map(t => ({...t, date: new Date(t.date)})));
+      setIsLoading(false);
+    };
+
+    fetchTransactions();
+  }, []);
 
   const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
-    const newTransaction = { ...transaction, id: crypto.randomUUID() };
-    setTransactions(prev => [newTransaction, ...prev]);
+    const newTransactionWithDate = { ...transaction, date: transaction.date.toISOString() };
+    db.transactions.add(newTransactionWithDate).then(id => {
+      const newTransactionForState = { ...transaction, id: String(id) };
+      setTransactions(prev => [newTransactionForState, ...prev]);
+    });
   };
 
   const filteredTransactions = useMemo(() => {
     let filtered = [...transactions];
 
-    // Filter by type
     if (filterType !== 'all') {
       filtered = filtered.filter(t => t.type === filterType);
     }
 
-    // Filter by date range
     const now = new Date();
     if (filterDateRange === 'this-month') {
       const start = startOfMonth(now);
@@ -45,15 +50,14 @@ export default function Home() {
       filtered = filtered.filter(t => t.date >= start);
     }
 
-    // Sort by date descending
     return filtered.sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [transactions, filterType, filterDateRange]);
 
   return (
-    <main className="container mx-auto p-4 sm:p-6 md:p-8">
+    <div className="container mx-auto p-4 sm:p-6 md:p-8">
       <header className="mb-8">
-        <h1 className="text-4xl font-bold text-center text-primary-foreground font-headline">KeuanganKu</h1>
-        <p className="text-center text-muted-foreground mt-2">Track your financial inflows and outflows with ease.</p>
+        <h1 className="text-4xl font-bold text-center text-foreground font-headline">KeuanganKu</h1>
+        <p className="text-center text-muted-foreground mt-2">Lacak arus masuk dan keluar keuangan Anda dengan mudah.</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -68,9 +72,9 @@ export default function Home() {
             currentType={filterType}
             currentDateRange={filterDateRange}
           />
-          <TransactionList transactions={filteredTransactions} />
+          <TransactionList transactions={filteredTransactions} isLoading={isLoading} />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

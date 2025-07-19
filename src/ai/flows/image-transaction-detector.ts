@@ -22,11 +22,11 @@ const ImageTransactionInputSchema = z.object({
 export type ImageTransactionInput = z.infer<typeof ImageTransactionInputSchema>;
 
 const ImageTransactionOutputSchema = z.object({
-  transactionType: z.enum(['income', 'expense']).describe('The type of transaction.'),
-  amount: z.number().describe('The amount of the transaction.'),
-  date: z.string().describe('The date of the transaction (YYYY-MM-DD).'),
-  category: z.string().describe('The category of the transaction.'),
-  description: z.string().describe('A short description of the transaction.'),
+  transactionType: z.enum(['income', 'expense']).describe('Tipe transaksi.'),
+  amount: z.number().describe('Jumlah transaksi dalam Rupiah (IDR).'),
+  date: z.string().describe('Tanggal transaksi (YYYY-MM-DD).'),
+  category: z.string().describe('Kategori transaksi.'),
+  description: z.string().describe('Deskripsi singkat transaksi.'),
 });
 
 export type ImageTransactionOutput = z.infer<typeof ImageTransactionOutputSchema>;
@@ -39,20 +39,20 @@ const prompt = ai.definePrompt({
   name: 'imageTransactionDetectorPrompt',
   input: {schema: ImageTransactionInputSchema},
   output: {schema: ImageTransactionOutputSchema},
-  prompt: `You are an expert financial assistant.  Your job is to extract transaction details from images of receipts and bank statements.
+  prompt: `Anda adalah asisten keuangan ahli berbahasa Indonesia. Tugas Anda adalah mengekstrak detail transaksi dari gambar struk atau laporan bank. Mata uang yang digunakan adalah Rupiah (IDR).
 
-  Analyze the image provided to extract the following information:
+  Analisis gambar yang diberikan untuk mengekstrak informasi berikut:
 
-  - transactionType: Determine whether the image represents an income or expense.
-  - amount: Extract the transaction amount.
-  - date: Extract the transaction date in YYYY-MM-DD format.
-  - category: Determine the appropriate transaction category (e.g., Food, Transport, Bills, Salary).
-  - description: Provide a concise description of the transaction.
+  - transactionType: Tentukan apakah gambar tersebut merupakan 'income' (pemasukan) atau 'expense' (pengeluaran).
+  - amount: Ekstrak jumlah transaksi dalam Rupiah (IDR). Jangan sertakan simbol mata uang atau pemisah ribuan.
+  - date: Ekstrak tanggal transaksi dalam format YYYY-MM-DD.
+  - category: Tentukan kategori transaksi yang sesuai (contoh: Makanan, Transportasi, Tagihan, Gaji).
+  - description: Berikan deskripsi singkat tentang transaksi.
 
-  Here is the image for analysis:
+  Berikut adalah gambar untuk dianalisis:
   {{media url=photoDataUri}}
 
-  Ensure that the output is accurate and well-formatted.
+  Pastikan outputnya akurat dan terformat dengan baik dalam bahasa Indonesia.
 `,
   config: {
     safetySettings: [

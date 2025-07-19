@@ -14,9 +14,11 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface TransactionListProps {
   transactions: Transaction[];
+  isLoading?: boolean;
 }
 
 const formatCurrency = (amount: number) => {
@@ -27,26 +29,35 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-export default function TransactionList({ transactions }: TransactionListProps) {
+export default function TransactionList({ transactions, isLoading = false }: TransactionListProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-headline">Transaction History</CardTitle>
-        <CardDescription>A list of your recent income and expenses.</CardDescription>
+        <CardTitle className="font-headline">Riwayat Transaksi</CardTitle>
+        <CardDescription>Daftar pemasukan dan pengeluaran terakhir Anda.</CardDescription>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[600px]">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Tanggal</TableHead>
+                <TableHead>Deskripsi</TableHead>
+                <TableHead>Kategori</TableHead>
+                <TableHead className="text-right">Jumlah</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.length > 0 ? (
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                    <TableRow key={index}>
+                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-5 w-28 ml-auto" /></TableCell>
+                    </TableRow>
+                ))
+              ) : transactions.length > 0 ? (
                 transactions.map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell className="font-medium">
@@ -72,7 +83,7 @@ export default function TransactionList({ transactions }: TransactionListProps) 
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center">
-                    No transactions found.
+                    Tidak ada transaksi.
                   </TableCell>
                 </TableRow>
               )}

@@ -58,9 +58,9 @@ export default function CategorySummary({ transactions }: CategorySummaryProps) 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-headline">Spending by Category</CardTitle>
+        <CardTitle className="font-headline">Pengeluaran per Kategori</CardTitle>
         <CardDescription>
-          A summary of your expenses for the selected period.
+          Ringkasan pengeluaran Anda untuk periode yang dipilih.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -93,7 +93,7 @@ export default function CategorySummary({ transactions }: CategorySummaryProps) 
             </ChartContainer>
         ) : (
           <div className="flex h-[200px] w-full items-center justify-center">
-            <p className="text-muted-foreground">No expense data to display.</p>
+            <p className="text-muted-foreground">Tidak ada data pengeluaran untuk ditampilkan.</p>
           </div>
         )}
       </CardContent>
