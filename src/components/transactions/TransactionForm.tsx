@@ -295,6 +295,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                       }}
                       defaultValue={field.value}
                       className="flex space-x-4"
+                      value={field.value}
                     >
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl>
