@@ -34,7 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { imageTransactionDetector } from '@/ai/flows/image-transaction-detector';
+import { extractTransactionFromImage } from '@/ai/flows/image-transaction-detector';
 import { useToast } from '@/hooks/use-toast';
 import type { Transaction, Category, FundSource } from '@/lib/types';
 import { db } from '@/lib/db';
@@ -147,11 +147,11 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
         const expenseCategories = allCategories.filter(c => c.type === 'expense').map(c => c.name);
         const fundSourceNames = allFundSources.map(fs => fs.name);
 
-        const result = await imageTransactionDetector({ 
+        const result = await extractTransactionFromImage({ 
             photoDataUri,
-            incomeCategories,
-            expenseCategories,
-            fundSources: fundSourceNames
+            incomeCategories: incomeCategories.join(','),
+            expenseCategories: expenseCategories.join(','),
+            fundSources: fundSourceNames.join(',')
         });
         
         let transactionDate = new Date(result.date);
@@ -165,12 +165,12 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
         }
 
         form.reset({
-          type: result.transactionType,
+          type: result.type,
           amount: result.amount,
           date: transactionDate,
           category: result.category,
           description: result.description,
-          fundSource: result.fundSource || form.getValues('fundSource')
+          fundSource: result.source || form.getValues('fundSource')
         });
         toast({
             title: "Sukses!",

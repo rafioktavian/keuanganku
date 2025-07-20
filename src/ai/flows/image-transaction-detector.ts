@@ -1,48 +1,56 @@
 'use server';
-
 /**
- * @fileOverview Extracts transaction details from an image using GenAI.
+ * @fileOverview This file defines a Genkit flow for extracting transaction details from an image.
  *
- * - imageTransactionDetector - A function that handles the image-based transaction detection process.
- * - ImageTransactionInput - The input type for the imageTransactionDetector function.
- * - ImageTransactionOutput - The return type for the imageTransactionDetector function.
+ * - extractTransactionFromImage - A function that takes an image of a receipt or slip and returns structured transaction data.
+ * - ExtractTransactionInput - The input type for the extractTransactionFromImage function.
+ * - ExtractedTransaction - The return type for the extractTransactionFromImage function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 
-const FlowInputSchema = z.object({
+const ExtractTransactionInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
-      "A photo of a receipt or bank statement, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A photo of a receipt, invoice, or salary slip, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
-  incomeCategories: z.array(z.string()),
-  expenseCategories: z.array(z.string()),
-  fundSources: z.array(z.string()),
+  // We pass stringified versions of categories and sources to the prompt
+  incomeCategories: z.string().describe("A comma-separated string of available income categories values."),
+  expenseCategories: z.string().describe("A comma-separated string of available expense categories values."),
+  fundSources: z.string().describe("A comma-separated string of available fund source values."),
+});
+export type ExtractTransactionInput = z.infer<typeof ExtractTransactionInputSchema>;
+
+
+const ExtractedTransactionSchema = z.object({
+  type: z.enum(['income', 'expense']).describe('The type of transaction.'),
+  amount: z.number().describe('The total amount of the transaction as a number. Use a period (.) for decimal separators and no thousands separators.'),
+  category: z
+    .string()
+    .describe(
+      `The category of the transaction. For 'income', choose one of the provided values. For 'expense', choose one of the provided values. Must be one of the provided values.`
+    ),
+  description: z.string().describe('A brief, relevant description of the transaction (e.g., store name, "Gaji Bulanan").'),
+  date: z.string().describe('The date of the transaction in YYYY-MM-DD format.'),
+  source: z.string().optional().describe(`The source of funds if identifiable (e.g., from a QRIS receipt showing Gopay, BCA, etc.). Choose one of the provided values. If not clear, leave it out.`)
 });
 
-export type ImageTransactionInput = z.infer<typeof FlowInputSchema>;
+export type ExtractedTransaction = z.infer<typeof ExtractedTransactionSchema>;
 
-const ImageTransactionOutputSchema = z.object({
-  transactionType: z.enum(['income', 'expense']).describe('Tipe transaksi.'),
-  amount: z.number().describe('Jumlah transaksi dalam Rupiah (IDR).'),
-  date: z.string().describe('Tanggal transaksi (YYYY-MM-DD).'),
-  category: z.string().describe('Kategori transaksi.'),
-  description: z.string().describe('Deskripsi singkat transaksi.'),
-  fundSource: z.string().optional().describe('Sumber dana yang digunakan (jika terlihat).'),
-});
 
-export type ImageTransactionOutput = z.infer<typeof ImageTransactionOutputSchema>;
-
-export async function imageTransactionDetector(input: ImageTransactionInput): Promise<ImageTransactionOutput> {
-  return imageTransactionDetectorFlow(input);
+export async function extractTransactionFromImage(
+  input: ExtractTransactionInput
+): Promise<ExtractedTransaction> {
+  return extractTransactionFlow(input);
 }
 
+
 const prompt = ai.definePrompt({
-  name: 'imageTransactionDetectorPrompt',
-  input: {schema: FlowInputSchema},
-  output: {schema: ImageTransactionOutputSchema},
+  name: 'extractTransactionPrompt',
+  input: { schema: ExtractTransactionInputSchema },
+  output: { schema: ExtractedTransactionSchema },
   prompt: `You are a financial assistant expert in analyzing receipts, invoices, and salary slips.
 Analyze the provided image and extract the following transaction details.
 
@@ -62,36 +70,16 @@ CRITICAL RULES:
 Image to analyze: {{media url=photoDataUri}}
 
 Provide your response in the requested JSON format.`,
-  config: {
-    safetySettings: [
-      {
-        category: 'HARM_CATEGORY_HATE_SPEECH',
-        threshold: 'BLOCK_ONLY_HIGH',
-      },
-      {
-        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-        threshold: 'BLOCK_NONE',
-      },
-      {
-        category: 'HARM_CATEGORY_HARASSMENT',
-        threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-      },
-      {
-        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-        threshold: 'BLOCK_LOW_AND_ABOVE',
-      },
-    ],
-  },
 });
 
-const imageTransactionDetectorFlow = ai.defineFlow(
+const extractTransactionFlow = ai.defineFlow(
   {
-    name: 'imageTransactionDetectorFlow',
-    inputSchema: FlowInputSchema,
-    outputSchema: ImageTransactionOutputSchema,
+    name: 'extractTransactionFlow',
+    inputSchema: ExtractTransactionInputSchema,
+    outputSchema: ExtractedTransactionSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input) => {
+    const { output } = await prompt(input);
     return output!;
   }
 );
