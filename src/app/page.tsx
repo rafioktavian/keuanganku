@@ -8,6 +8,7 @@ import CategorySummary from '@/components/transactions/CategorySummary';
 import Filters from '@/components/transactions/Filters';
 import { addDays, startOfMonth } from 'date-fns';
 import { db } from '@/lib/db';
+import SavingsAdvisor from '@/components/transactions/SavingsAdvisor';
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -63,6 +64,7 @@ export default function Home() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 flex flex-col gap-8">
           <TransactionForm onAddTransaction={addTransaction} />
+          <SavingsAdvisor transactions={transactions} />
           <CategorySummary transactions={transactions} />
         </div>
         <div className="lg:col-span-2">
