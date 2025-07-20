@@ -33,6 +33,7 @@ import { Calendar as CalendarIcon, Upload, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 import { imageTransactionDetector } from '@/ai/flows/image-transaction-detector';
 import { useToast } from '@/hooks/use-toast';
 import type { Transaction, Category, FundSource } from '@/lib/types';
@@ -104,7 +105,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
       fundSource: '',
       description: '',
     });
-  }, []);
+  }, [form]);
 
   const transactionType = form.watch('type');
 
@@ -338,13 +339,18 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                             !field.value && 'text-muted-foreground'
                           )}
                         >
-                          {field.value ? format(field.value, 'PPP') : <span>Pilih tanggal</span>}
+                          {field.value ? (
+                            format(field.value, 'PPP', { locale: id })
+                          ) : (
+                            <span>Pilih tanggal</span>
+                          )}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
+                        locale={id}
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
