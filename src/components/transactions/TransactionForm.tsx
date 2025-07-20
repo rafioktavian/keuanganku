@@ -298,7 +298,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
       <CardHeader>
         <CardTitle className="font-headline">Tambah Transaksi</CardTitle>
         <CardDescription>
-          Unggah struk atau gunakan kamera. Biar AI yang mengisi form untukmu.
+          Unggah struk atau gunakan kamera. Biar AI yang mengisi form untukmu, atau kamu bisa mengisi form secara manual.
         </CardDescription>
       </CardHeader>
       <CardContent>
