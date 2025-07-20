@@ -10,7 +10,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { db } from '@/lib/db';
 
 const FlowInputSchema = z.object({
   photoDataUri: z
@@ -18,14 +17,10 @@ const FlowInputSchema = z.object({
     .describe(
       "A photo of a receipt or bank statement, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
+  incomeCategories: z.array(z.string()),
+  expenseCategories: z.array(z.string()),
+  fundSources: z.array(z.string()),
 });
-
-const PromptInputSchema = FlowInputSchema.extend({
-    incomeCategories: z.array(z.string()),
-    expenseCategories: z.array(z.string()),
-    fundSources: z.array(z.string()),
-});
-
 
 export type ImageTransactionInput = z.infer<typeof FlowInputSchema>;
 
@@ -46,7 +41,7 @@ export async function imageTransactionDetector(input: ImageTransactionInput): Pr
 
 const prompt = ai.definePrompt({
   name: 'imageTransactionDetectorPrompt',
-  input: {schema: PromptInputSchema},
+  input: {schema: FlowInputSchema},
   output: {schema: ImageTransactionOutputSchema},
   prompt: `You are a financial assistant expert in analyzing receipts, invoices, and salary slips written in Indonesian.
 Analyze the provided image and extract the following transaction details.
@@ -97,21 +92,7 @@ const imageTransactionDetectorFlow = ai.defineFlow(
     outputSchema: ImageTransactionOutputSchema,
   },
   async input => {
-    const allCategories = await db.categories.toArray();
-    const allFundSources = await db.fundSources.toArray();
-
-    const incomeCategories = allCategories.filter(c => c.type === 'income').map(c => c.name);
-    const expenseCategories = allCategories.filter(c => c.type === 'expense').map(c => c.name);
-    const fundSources = allFundSources.map(fs => fs.name);
-
-    const promptInput = {
-      ...input,
-      incomeCategories,
-      expenseCategories,
-      fundSources,
-    };
-
-    const {output} = await prompt(promptInput);
+    const {output} = await prompt(input);
     return output!;
   }
 );

@@ -140,7 +140,19 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
     reader.onload = async () => {
       const photoDataUri = reader.result as string;
       try {
-        const result = await imageTransactionDetector({ photoDataUri });
+        // Fetch master data to pass to the AI flow
+        const allCategories = await db.categories.toArray();
+        const allFundSources = await db.fundSources.toArray();
+        const incomeCategories = allCategories.filter(c => c.type === 'income').map(c => c.name);
+        const expenseCategories = allCategories.filter(c => c.type === 'expense').map(c => c.name);
+        const fundSourceNames = allFundSources.map(fs => fs.name);
+
+        const result = await imageTransactionDetector({ 
+            photoDataUri,
+            incomeCategories,
+            expenseCategories,
+            fundSources: fundSourceNames
+        });
         
         let transactionDate = new Date(result.date);
         if (isNaN(transactionDate.getTime())) {
@@ -158,7 +170,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
           date: transactionDate,
           category: result.category,
           description: result.description,
-          fundSource: form.getValues('fundSource') // keep existing or let user choose
+          fundSource: result.fundSource || form.getValues('fundSource')
         });
         toast({
             title: "Sukses!",
