@@ -46,8 +46,12 @@ const prompt = ai.definePrompt({
   - transactionType: Tentukan apakah ini 'income' (pemasukan) atau 'expense' (pengeluaran).
   - amount: Ekstrak jumlah total transaksi. Ini harus berupa angka saja, tanpa simbol 'Rp', titik, atau koma. Contohnya, 'Rp125.000' harus diekstrak sebagai 125000. Carilah kata kunci seperti 'TOTAL', 'TOTAL BAYAR', atau 'TAGIHAN'.
   - date: Ekstrak tanggal transaksi dalam format YYYY-MM-DD.
-  - category: Berikan kategori yang paling sesuai (contoh: Makanan & Minuman, Transportasi, Tagihan, Belanja, Gaji).
-  - description: Berikan deskripsi singkat dan jelas tentang transaksi. Biasanya ini adalah nama toko atau item utama yang dibeli.
+  - category: Berikan kategori yang paling sesuai. Penting: Jika deskripsi atau item mengandung kata "gaji" atau "payroll", atur kategori menjadi "Gaji" dan transactionType menjadi "income". Untuk lainnya bisa berupa: Makanan & Minuman, Transportasi, Tagihan, Belanja, Hiburan, dll.
+  - description: Berikan deskripsi singkat dan jelas tentang transaksi. Biasanya ini adalah nama toko, item utama yang dibeli, atau keterangan transfer.
+
+  Aturan Penting:
+  1. Jika Anda melihat kata "gaji", "salary", atau "payroll" pada struk, Anda HARUS menetapkan 'transactionType' ke 'income' dan 'category' ke 'Gaji'.
+  2. Fokus pada jumlah total, abaikan item per baris jika ada totalnya.
 
   Berikut adalah gambar untuk dianalisis:
   {{media url=photoDataUri}}
