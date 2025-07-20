@@ -303,7 +303,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
       </CardHeader>
       <CardContent>
         <div className="mb-6 space-y-4">
-            <input
+             <input
                 type="file"
                 accept="image/*"
                 ref={fileInputRef}
@@ -311,63 +311,68 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                 className="hidden"
                 id="receipt-upload"
             />
-            <label htmlFor="receipt-upload" className="block">
-                <Card
-                    className={cn(
-                        "border-2 border-dashed hover:border-primary transition-colors cursor-pointer",
-                        imagePreview ? 'p-2' : 'p-6'
-                    )}
-                >
-                    {imagePreview ? (
-                        <div className="relative w-full h-40 rounded-md overflow-hidden">
-                            <Image src={imagePreview} alt="Pratinjau Struk" fill objectFit="contain" />
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
-                            <Upload className="h-10 w-10" />
-                            <p className="text-center font-semibold">
+            <div className="grid grid-cols-2 gap-4">
+                <label htmlFor="receipt-upload" className="block">
+                    <Card className="border-2 border-dashed hover:border-primary transition-colors cursor-pointer p-4 h-full">
+                        <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground h-full">
+                            <Upload className="h-8 w-8" />
+                            <p className="text-center font-semibold text-sm">
                                 <span className="text-primary">Unggah Struk</span>
                             </p>
-                            <p className="text-xs text-center">Biar AI yang mengisi form untukmu</p>
+                            <p className="text-xs text-center">Pilih dari galeri</p>
                         </div>
-                    )}
-                </Card>
-            </label>
+                    </Card>
+                </label>
 
-            <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="w-full">
-                  <Camera className="mr-2 h-4 w-4" />
-                  Gunakan Kamera
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Ambil Foto Struk</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="relative w-full aspect-video rounded-md bg-muted overflow-hidden">
-                    <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                    <canvas ref={canvasRef} className="hidden" />
-                  </div>
-                  {hasCameraPermission === false && (
-                    <Alert variant="destructive">
-                      <CameraOff className="h-4 w-4" />
-                      <AlertTitle>Akses Kamera Ditolak</AlertTitle>
-                      <AlertDescription>
-                        Anda perlu memberikan izin kamera di pengaturan browser untuk menggunakan fitur ini.
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
+                    <DialogTrigger asChild>
+                         <Card className="border-2 border-dashed hover:border-primary transition-colors cursor-pointer p-4 h-full">
+                            <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground h-full">
+                                <Camera className="h-8 w-8" />
+                                <p className="text-center font-semibold text-sm">
+                                    <span className="text-primary">Gunakan Kamera</span>
+                                </p>
+                                <p className="text-xs text-center">Ambil foto langsung</p>
+                            </div>
+                        </Card>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                        <DialogTitle>Ambil Foto Struk</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                        <div className="relative w-full aspect-video rounded-md bg-muted overflow-hidden">
+                            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                            <canvas ref={canvasRef} className="hidden" />
+                        </div>
+                        {hasCameraPermission === false && (
+                            <Alert variant="destructive">
+                            <CameraOff className="h-4 w-4" />
+                            <AlertTitle>Akses Kamera Ditolak</AlertTitle>
+                            <AlertDescription>
+                                Anda perlu memberikan izin kamera di pengaturan browser untuk menggunakan fitur ini.
+                            </AlertDescription>
+                            </Alert>
+                        )}
+                        </div>
+                        <DialogFooter>
+                        <Button onClick={handleCapture} disabled={hasCameraPermission !== true}>
+                            <Camera className="mr-2 h-4 w-4"/>
+                            Ambil Gambar
+                        </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+            
+            {imagePreview && (
+                <div className="mt-4">
+                    <p className="text-sm font-medium mb-2 text-center">Pratinjau Gambar:</p>
+                    <div className="relative w-full h-48 rounded-md overflow-hidden border">
+                        <Image src={imagePreview} alt="Pratinjau Struk" layout="fill" objectFit="contain" />
+                    </div>
                 </div>
-                <DialogFooter>
-                  <Button onClick={handleCapture} disabled={hasCameraPermission !== true}>
-                    <Camera className="mr-2 h-4 w-4"/>
-                    Ambil Gambar
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            )}
         </div>
 
         <Form {...form}>
