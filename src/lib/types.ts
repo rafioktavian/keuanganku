@@ -1,3 +1,5 @@
+import type { DateRange as ReactDateRange } from 'react-day-picker';
+
 export type TransactionType = 'income' | 'expense';
 
 export interface Transaction {
@@ -32,3 +34,5 @@ export interface FundSource {
     id?: number;
     name: string;
 }
+
+export type DateRange = ReactDateRange;

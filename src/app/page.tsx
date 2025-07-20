@@ -1,19 +1,19 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import type { Transaction, TransactionType } from '@/lib/types';
+import type { Transaction, TransactionType, DateRange } from '@/lib/types';
 import TransactionForm from '@/components/transactions/TransactionForm';
 import TransactionList from '@/components/transactions/TransactionList';
 import CategorySummary from '@/components/transactions/CategorySummary';
 import Filters from '@/components/transactions/Filters';
-import { addDays, startOfMonth } from 'date-fns';
 import { db } from '@/lib/db';
 import SavingsAdvisor from '@/components/transactions/SavingsAdvisor';
+import { endOfDay, startOfDay } from 'date-fns';
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filterType, setFilterType] = useState<'all' | TransactionType>('all');
-  const [filterDateRange, setFilterDateRange] = useState<'all' | 'this-month' | 'last-30-days'>('all');
+  const [filterDateRange, setFilterDateRange] = useState<DateRange | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -41,15 +41,16 @@ export default function Home() {
     if (filterType !== 'all') {
       filtered = filtered.filter(t => t.type === filterType);
     }
-
-    const now = new Date();
-    if (filterDateRange === 'this-month') {
-      const start = startOfMonth(now);
-      filtered = filtered.filter(t => t.date >= start);
-    } else if (filterDateRange === 'last-30-days') {
-      const start = addDays(now, -30);
-      filtered = filtered.filter(t => t.date >= start);
+    
+    if (filterDateRange?.from && filterDateRange?.to) {
+        const startDate = startOfDay(filterDateRange.from);
+        const endDate = endOfDay(filterDateRange.to);
+        filtered = filtered.filter(t => t.date >= startDate && t.date <= endDate);
+    } else if (filterDateRange?.from) {
+        const startDate = startOfDay(filterDateRange.from);
+        filtered = filtered.filter(t => t.date >= startDate);
     }
+
 
     return filtered.sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [transactions, filterType, filterDateRange]);
@@ -65,7 +66,7 @@ export default function Home() {
         <div className="lg:col-span-1 flex flex-col gap-8">
           <TransactionForm onAddTransaction={addTransaction} />
           <SavingsAdvisor transactions={transactions} />
-          <CategorySummary transactions={transactions} />
+          <CategorySummary transactions={filteredTransactions} />
         </div>
         <div className="lg:col-span-2">
           <Filters

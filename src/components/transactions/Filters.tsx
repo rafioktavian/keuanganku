@@ -1,21 +1,79 @@
 'use client';
 
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import * as React from "react"
+import { format } from "date-fns"
+import { id as localeID } from 'date-fns/locale';
+import { Calendar as CalendarIcon } from "lucide-react"
+import type { DateRange } from "react-day-picker"
+
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { TransactionType } from '@/lib/types';
+
 
 interface FiltersProps {
   onTypeChange: (type: 'all' | TransactionType) => void;
-  onDateChange: (range: 'all' | 'this-month' | 'last-30-days') => void;
+  onDateChange: (range: DateRange | undefined) => void;
   currentType: 'all' | TransactionType;
-  currentDateRange: 'all' | 'this-month' | 'last-30-days';
+  currentDateRange: DateRange | undefined;
 }
+
+export function DatePickerWithRange({
+  className,
+  date,
+  setDate
+}: React.HTMLAttributes<HTMLDivElement> & { date: DateRange | undefined, setDate: (date: DateRange | undefined) => void}) {
+
+  return (
+    <div className={cn("grid gap-2", className)}>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            id="date"
+            variant={"outline"}
+            className={cn(
+              "w-full sm:w-[300px] justify-start text-left font-normal",
+              !date && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {date?.from ? (
+              date.to ? (
+                <>
+                  {format(date.from, "LLL dd, y", { locale: localeID })} -{" "}
+                  {format(date.to, "LLL dd, y", { locale: localeID })}
+                </>
+              ) : (
+                format(date.from, "LLL dd, y", { locale: localeID })
+              )
+            ) : (
+              <span>Pilih rentang tanggal</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            initialFocus
+            mode="range"
+            defaultMonth={date?.from}
+            selected={date}
+            onSelect={setDate}
+            numberOfMonths={2}
+            locale={localeID}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
+}
+
 
 export default function Filters({
   onTypeChange,
@@ -32,16 +90,7 @@ export default function Filters({
           <TabsTrigger value="expense">Pengeluaran</TabsTrigger>
         </TabsList>
       </Tabs>
-      <Select value={currentDateRange} onValueChange={(value) => onDateChange(value as 'all' | 'this-month' | 'last-30-days')}>
-        <SelectTrigger className="w-full sm:w-[180px]">
-          <SelectValue placeholder="Pilih rentang tanggal" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Semua Waktu</SelectItem>
-          <SelectItem value="this-month">Bulan Ini</SelectItem>
-          <SelectItem value="last-30-days">30 Hari Terakhir</SelectItem>
-        </SelectContent>
-      </Select>
+      <DatePickerWithRange date={currentDateRange} setDate={onDateChange} />
     </div>
   );
 }

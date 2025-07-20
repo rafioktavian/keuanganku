@@ -92,7 +92,7 @@ export default function CategorySummary({ transactions }: CategorySummaryProps) 
             </ResponsiveContainer>
             </ChartContainer>
         ) : (
-          <div className="flex h-[200px] w-full items-center justify-center">
+          <div className="flex h-[300px] w-full items-center justify-center">
             <p className="text-muted-foreground">Tidak ada data pengeluaran untuk ditampilkan.</p>
           </div>
         )}
