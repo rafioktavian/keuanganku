@@ -39,24 +39,30 @@ const prompt = ai.definePrompt({
   name: 'imageTransactionDetectorPrompt',
   input: {schema: ImageTransactionInputSchema},
   output: {schema: ImageTransactionOutputSchema},
-  prompt: `Anda adalah asisten keuangan ahli berbahasa Indonesia. Tugas Anda adalah mengekstrak detail transaksi dari gambar struk atau laporan bank. Mata uang yang digunakan adalah Rupiah (IDR).
+  prompt: `Anda adalah asisten keuangan ahli berbahasa Indonesia. Tugas Anda adalah mengekstrak detail transaksi dari gambar struk atau slip gaji. Mata uang yang digunakan adalah Rupiah (IDR).
 
   Analisis gambar yang diberikan untuk mengekstrak informasi berikut:
 
   - transactionType: Tentukan apakah ini 'income' (pemasukan) atau 'expense' (pengeluaran).
-  - amount: Ekstrak jumlah total transaksi. Ini harus berupa angka saja, tanpa simbol 'Rp', titik, atau koma. Contohnya, 'Rp125.000' harus diekstrak sebagai 125000. Carilah kata kunci seperti 'TOTAL', 'TOTAL BAYAR', atau 'TAGIHAN'.
-  - date: Ekstrak tanggal transaksi dalam format YYYY-MM-DD.
-  - category: Berikan kategori yang paling sesuai. Penting: Jika deskripsi atau item mengandung kata "gaji" atau "payroll", atur kategori menjadi "Gaji" dan transactionType menjadi "income". Untuk lainnya bisa berupa: Makanan & Minuman, Transportasi, Tagihan, Belanja, Hiburan, dll.
-  - description: Berikan deskripsi singkat dan jelas tentang transaksi. Biasanya ini adalah nama toko, item utama yang dibeli, atau keterangan transfer.
+  - amount: Ekstrak jumlah total transaksi (biasanya Take Home Pay jika ini adalah slip gaji). Ini harus berupa angka saja, tanpa simbol 'Rp', titik, atau koma. Contohnya, 'Rp5.250.000' harus diekstrak sebagai 5250000.
+  - date: Ekstrak tanggal transaksi atau periode gaji dalam format YYYY-MM-DD.
+  - category: Berikan kategori yang paling sesuai.
+  - description: Berikan deskripsi singkat dan jelas tentang transaksi.
 
-  Aturan Penting:
-  1. Jika Anda melihat kata "gaji", "salary", atau "payroll" pada struk, Anda HARUS menetapkan 'transactionType' ke 'income' dan 'category' ke 'Gaji'.
-  2. Fokus pada jumlah total, abaikan item per baris jika ada totalnya.
+  Aturan Paling Penting (WAJIB DIIKUTI):
+  1.  **IDENTIFIKASI GAJI**: Jika gambar adalah slip gaji, atau mengandung kata "gaji", "salary", "payroll", "take home pay", atau "penerimaan bersih", maka Anda **HARUS** melakukan hal berikut:
+      *   Atur \`transactionType\` ke 'income'.
+      *   Atur \`category\` ke 'Gaji'.
+      *   Ini adalah prioritas tertinggi. Abaikan aturan lain jika kondisi ini terpenuhi.
+
+  2.  **PENGELUARAN**: Untuk semua gambar lain yang bukan slip gaji (seperti struk belanja, tagihan), atur \`transactionType\` ke 'expense'. Kategorinya bisa 'Makanan & Minuman', 'Transportasi', 'Tagihan', dll.
+
+  3.  **FOKUS PADA JUMLAH TOTAL**: Selalu cari jumlah akhir atau total. Untuk struk belanja, cari kata kunci seperti 'TOTAL' atau 'TOTAL BAYAR'. Untuk slip gaji, cari 'Take Home Pay' atau 'Penerimaan Bersih'.
 
   Berikut adalah gambar untuk dianalisis:
   {{media url=photoDataUri}}
 
-  Pastikan outputnya akurat dan terformat dengan baik.
+  Pastikan outputnya akurat dan sesuai dengan aturan di atas.
 `,
   config: {
     safetySettings: [
