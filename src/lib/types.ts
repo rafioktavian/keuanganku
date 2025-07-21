@@ -35,4 +35,17 @@ export interface FundSource {
     name: string;
 }
 
+export interface Goal {
+    id?: number;
+    name: string;
+    targetAmount: number;
+    currentAmount: number;
+    targetDate: Date;
+}
+
+export interface GoalDB extends Omit<Goal, 'targetDate'> {
+    targetDate: string;
+}
+
+
 export type DateRange = ReactDateRange;

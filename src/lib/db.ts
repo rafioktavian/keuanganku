@@ -1,22 +1,40 @@
 import Dexie, { type Table } from 'dexie';
-import type { TransactionDB, Category, FundSource } from './types';
+import type { TransactionDB, Category, FundSource, GoalDB } from './types';
 
 export class AppDB extends Dexie {
   transactions!: Table<TransactionDB>;
   categories!: Table<Category>;
   fundSources!: Table<FundSource>;
+  goals!: Table<GoalDB>;
+
 
   constructor() {
     super('KeuanganKuDB');
+    this.version(2).stores({
+      transactions: '++id, date, type, category',
+      categories: '++id, name, type',
+      fundSources: '++id, name',
+      goals: '++id, name, targetDate'
+    }).upgrade(tx => {
+       // This is needed for existing users if their schema changes.
+    });
+
     this.version(1).stores({
       transactions: '++id, date, type, category',
       categories: '++id, name, type',
       fundSources: '++id, name',
     });
+
     this.on('populate', () => this.populate());
   }
   
   async populate() {
+    const categoryCount = await db.categories.count();
+    const fundSourceCount = await db.fundSources.count();
+    if (categoryCount > 0 && fundSourceCount > 0) {
+      return; // Data already populated
+    }
+  
     await db.categories.bulkAdd([
         // Pemasukan
         { name: 'Gaji', type: 'income' },
