@@ -11,11 +11,13 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { FileDown } from 'lucide-react';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -31,11 +33,48 @@ const formatCurrency = (amount: number) => {
 };
 
 export default function TransactionList({ transactions, isLoading = false }: TransactionListProps) {
+  const handleExport = () => {
+    if (!transactions || transactions.length === 0) {
+      return;
+    }
+
+    const headers = ['Tanggal', 'Tipe', 'Deskripsi', 'Kategori', 'Sumber Dana', 'Jumlah'];
+    const csvContent = [
+      headers.join(','),
+      ...transactions.map(t => [
+        format(t.date, 'yyyy-MM-dd'),
+        t.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
+        `"${t.description.replace(/"/g, '""')}"`, // Handle quotes in description
+        t.category,
+        t.fundSource,
+        t.amount,
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.href) {
+      URL.revokeObjectURL(link.href);
+    }
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.setAttribute('download', 'laporan-transaksi.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="font-headline">Riwayat Transaksi</CardTitle>
-        <CardDescription>Daftar pemasukan dan pengeluaran terakhir Anda.</CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between">
+        <div>
+          <CardTitle className="font-headline">Riwayat Transaksi</CardTitle>
+          <CardDescription>Daftar pemasukan dan pengeluaran terakhir Anda.</CardDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={isLoading || transactions.length === 0}>
+          <FileDown className="mr-2 h-4 w-4" />
+          Ekspor
+        </Button>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[600px]">
