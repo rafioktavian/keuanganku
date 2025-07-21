@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { TransactionDB, Category, FundSource, GoalDB, InvestmentDB } from './types';
+import type { TransactionDB, Category, FundSource, GoalDB, InvestmentDB, DebtDB } from './types';
 
 export class AppDB extends Dexie {
   transactions!: Table<TransactionDB>;
@@ -7,10 +7,20 @@ export class AppDB extends Dexie {
   fundSources!: Table<FundSource>;
   goals!: Table<GoalDB>;
   investments!: Table<InvestmentDB>;
+  debts!: Table<DebtDB>;
 
 
   constructor() {
     super('KeuanganKuDB');
+    this.version(4).stores({
+      transactions: '++id, date, type, category',
+      categories: '++id, name, type',
+      fundSources: '++id, name',
+      goals: '++id, name, targetDate',
+      investments: '++id, name, type, purchaseDate',
+      debts: '++id, type, status, dueDate',
+    });
+
     this.version(3).stores({
       transactions: '++id, date, type, category',
       categories: '++id, name, type',

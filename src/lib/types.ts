@@ -60,4 +60,22 @@ export interface InvestmentDB extends Omit<Investment, 'purchaseDate'> {
     purchaseDate: string;
 }
 
+export type DebtType = 'debt' | 'receivable';
+export type DebtStatus = 'unpaid' | 'paid';
+
+export interface Debt {
+    id?: number;
+    type: DebtType;
+    personName: string;
+    amount: number;
+    dueDate: Date;
+    status: DebtStatus;
+    description: string;
+}
+
+export interface DebtDB extends Omit<Debt, 'dueDate'> {
+    dueDate: string;
+}
+
+
 export type DateRange = ReactDateRange;
