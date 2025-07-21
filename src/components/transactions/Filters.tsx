@@ -84,13 +84,13 @@ export default function Filters({
   currentDateRange,
 }: FiltersProps) {
   return (
-    <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-4">
-        <div className="flex flex-col sm:flex-row gap-4 items-center w-full sm:w-auto">
-            <Tabs value={currentType} onValueChange={(value) => onTypeChange(value as 'all' | TransactionType)} className="w-full sm:w-auto">
-                <TabsList className="w-full sm:w-auto grid grid-cols-3">
-                <TabsTrigger value="all">Semua</TabsTrigger>
-                <TabsTrigger value="income">Pemasukan</TabsTrigger>
-                <TabsTrigger value="expense">Pengeluaran</TabsTrigger>
+    <div className="flex flex-wrap gap-4 justify-between items-center mb-4">
+        <div className="flex flex-wrap gap-4 items-center">
+            <Tabs value={currentType} onValueChange={(value) => onTypeChange(value as 'all' | TransactionType)}>
+                <TabsList>
+                    <TabsTrigger value="all">Semua</TabsTrigger>
+                    <TabsTrigger value="income">Pemasukan</TabsTrigger>
+                    <TabsTrigger value="expense">Pengeluaran</TabsTrigger>
                 </TabsList>
             </Tabs>
             <DatePickerWithRange date={currentDateRange} setDate={onDateChange} />
