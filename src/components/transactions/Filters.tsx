@@ -3,7 +3,7 @@
 import * as React from "react"
 import { format } from "date-fns"
 import { id as localeID } from 'date-fns/locale';
-import { Calendar as CalendarIcon } from "lucide-react"
+import { Calendar as CalendarIcon, PlusCircle } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
@@ -21,6 +21,7 @@ import type { TransactionType } from '@/lib/types';
 interface FiltersProps {
   onTypeChange: (type: 'all' | TransactionType) => void;
   onDateChange: (range: DateRange | undefined) => void;
+  onAddTransactionClick: () => void;
   currentType: 'all' | TransactionType;
   currentDateRange: DateRange | undefined;
 }
@@ -78,19 +79,26 @@ export function DatePickerWithRange({
 export default function Filters({
   onTypeChange,
   onDateChange,
+  onAddTransactionClick,
   currentType,
   currentDateRange,
 }: FiltersProps) {
   return (
     <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-4">
-      <Tabs value={currentType} onValueChange={(value) => onTypeChange(value as 'all' | TransactionType)}>
-        <TabsList>
-          <TabsTrigger value="all">Semua</TabsTrigger>
-          <TabsTrigger value="income">Pemasukan</TabsTrigger>
-          <TabsTrigger value="expense">Pengeluaran</TabsTrigger>
-        </TabsList>
-      </Tabs>
-      <DatePickerWithRange date={currentDateRange} setDate={onDateChange} />
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <Tabs value={currentType} onValueChange={(value) => onTypeChange(value as 'all' | TransactionType)}>
+                <TabsList>
+                <TabsTrigger value="all">Semua</TabsTrigger>
+                <TabsTrigger value="income">Pemasukan</TabsTrigger>
+                <TabsTrigger value="expense">Pengeluaran</TabsTrigger>
+                </TabsList>
+            </Tabs>
+            <DatePickerWithRange date={currentDateRange} setDate={onDateChange} />
+        </div>
+        <Button onClick={onAddTransactionClick} className="w-full sm:w-auto">
+            <PlusCircle />
+            Tambah Transaksi
+        </Button>
     </div>
   );
 }

@@ -10,6 +10,7 @@ export interface Transaction {
   fundSource: string;
   description: string;
   type: TransactionType;
+  linkedTo?: string; // e.g., 'goal_1', 'investment_3', 'debt_5'
 }
 
 export interface TransactionDB extends Omit<Transaction, 'id' | 'date'> {

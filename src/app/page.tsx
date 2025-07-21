@@ -9,31 +9,98 @@ import Filters from '@/components/transactions/Filters';
 import { db } from '@/lib/db';
 import SavingsAdvisor from '@/components/transactions/SavingsAdvisor';
 import { endOfDay, startOfDay } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filterType, setFilterType] = useState<'all' | TransactionType>('all');
   const [filterDateRange, setFilterDateRange] = useState<DateRange | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const { toast } = useToast();
+
+  const fetchTransactions = async () => {
+    setIsLoading(true);
+    const allTransactions = await db.transactions.toArray();
+    setTransactions(allTransactions.map(t => ({...t, date: new Date(t.date)})));
+    setIsLoading(false);
+  };
 
   useEffect(() => {
-    const fetchTransactions = async () => {
-      setIsLoading(true);
-      const allTransactions = await db.transactions.toArray();
-      setTransactions(allTransactions.map(t => ({...t, date: new Date(t.date)})));
-      setIsLoading(false);
-    };
-
     fetchTransactions();
   }, []);
 
-  const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
+  const handleAddTransaction = async (transaction: Omit<Transaction, 'id'>) => {
     const newTransactionWithDate = { ...transaction, date: transaction.date.toISOString() };
-    db.transactions.add(newTransactionWithDate).then(id => {
-      const newTransactionForState = { ...transaction, id: String(id) };
-      setTransactions(prev => [newTransactionForState, ...prev]);
-    });
+    try {
+      await db.transactions.add(newTransactionWithDate);
+      await fetchTransactions(); // Refetch to get the latest data with correct id
+      setIsFormOpen(false);
+      toast({ title: 'Sukses', description: 'Transaksi berhasil ditambahkan.' });
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal menambahkan transaksi.' });
+    }
   };
+
+  const handleUpdateTransaction = async (id: number | string, transaction: Omit<Transaction, 'id'>) => {
+    const updatedTransaction = { ...transaction, date: transaction.date.toISOString() };
+     try {
+      await db.transactions.update(id, updatedTransaction);
+      await fetchTransactions();
+      setIsFormOpen(false);
+      setEditingTransaction(null);
+      toast({ title: 'Sukses', description: 'Transaksi berhasil diperbarui.' });
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal memperbarui transaksi.' });
+    }
+  };
+
+
+  const handleDeleteTransaction = async (transaction: Transaction) => {
+    const { id, amount, linkedTo } = transaction;
+    if (id === undefined) return;
+    
+    try {
+      // Revert linked transaction logic
+      if (linkedTo) {
+        const [type, linkedIdStr] = linkedTo.split('_');
+        const linkedId = parseInt(linkedIdStr, 10);
+        if (type === 'goal') {
+          await db.goals.where({id: linkedId}).modify(g => { g.currentAmount -= amount });
+        } else if (type === 'investment') {
+          await db.investments.where({id: linkedId}).modify(i => {
+            i.initialAmount -= amount;
+            i.currentValue -= amount;
+           });
+        } else if (type === 'debt' || type === 'receivable') {
+          await db.debts.where({id: linkedId}).modify(d => { 
+            d.currentAmount += amount;
+            d.status = 'unpaid';
+           });
+        }
+      }
+
+      await db.transactions.delete(Number(id));
+      await fetchTransactions();
+      toast({ title: 'Sukses', description: 'Transaksi berhasil dihapus.' });
+    } catch (error) {
+      console.error('Failed to delete transaction:', error);
+      toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal menghapus transaksi.' });
+    }
+  };
+  
+  const openEditForm = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setIsFormOpen(true);
+  }
+  
+  const openAddForm = () => {
+    setEditingTransaction(null);
+    setIsFormOpen(true);
+  }
 
   const filteredTransactions = useMemo(() => {
     let filtered = [...transactions];
@@ -51,7 +118,6 @@ export default function Home() {
         filtered = filtered.filter(t => t.date >= startDate);
     }
 
-
     return filtered.sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [transactions, filterType, filterDateRange]);
 
@@ -64,7 +130,13 @@ export default function Home() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 flex flex-col gap-8">
-          <TransactionForm onAddTransaction={addTransaction} />
+          <TransactionForm 
+            onAddTransaction={handleAddTransaction}
+            onUpdateTransaction={handleUpdateTransaction}
+            onClose={() => setIsFormOpen(false)}
+            isOpen={isFormOpen}
+            transactionToEdit={editingTransaction}
+          />
           <SavingsAdvisor transactions={transactions} />
           <CategorySummary transactions={filteredTransactions} />
         </div>
@@ -74,8 +146,14 @@ export default function Home() {
             onDateChange={setFilterDateRange}
             currentType={filterType}
             currentDateRange={filterDateRange}
+            onAddTransactionClick={openAddForm}
           />
-          <TransactionList transactions={filteredTransactions} isLoading={isLoading} />
+          <TransactionList 
+            transactions={filteredTransactions} 
+            isLoading={isLoading}
+            onEdit={openEditForm}
+            onDelete={handleDeleteTransaction}
+          />
         </div>
       </div>
     </div>

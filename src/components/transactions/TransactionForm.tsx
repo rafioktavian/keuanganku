@@ -18,6 +18,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +30,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Calendar as CalendarIcon, Upload, Loader2, Camera, CameraOff, Link2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Upload, Loader2, Camera, CameraOff, Link2, PlusCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -39,7 +40,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Transaction, Category, FundSource, Goal, Investment, Debt } from '@/lib/types';
 import { db } from '@/lib/db';
 import Image from 'next/image';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog as UIDialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
@@ -59,6 +60,10 @@ const formSchema = z.object({
 
 type TransactionFormProps = {
   onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
+  onUpdateTransaction: (id: number | string, transaction: Omit<Transaction, 'id'>) => void;
+  onClose: () => void;
+  isOpen: boolean;
+  transactionToEdit: Transaction | null;
 };
 
 const formatToRupiah = (value: number | string) => {
@@ -79,7 +84,13 @@ const parseFromRupiah = (value: string) => {
 };
 
 
-export default function TransactionForm({ onAddTransaction }: TransactionFormProps) {
+export default function TransactionForm({
+  onAddTransaction,
+  onUpdateTransaction,
+  onClose,
+  isOpen,
+  transactionToEdit,
+}: TransactionFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -89,7 +100,6 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
   const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [fundSources, setFundSources] = useState<FundSource[]>([]);
-  const [isClient, setIsClient] = useState(false);
   
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -102,59 +112,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      type: 'expense',
-      amount: 0,
-      category: '',
-      fundSource: '',
-      description: '',
-      linkedTo: '',
-    },
   });
-  
-  useEffect(() => {
-    setIsClient(true);
-    form.reset({
-      type: 'expense',
-      amount: 0,
-      date: new Date(),
-      category: '',
-      fundSource: '',
-      description: '',
-      linkedTo: '',
-    });
-  }, [form]);
-  
-  useEffect(() => {
-    if (!isCameraOpen) {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-        videoRef.current.srcObject = null;
-      }
-      return;
-    }
-
-    const getCameraPermission = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        setHasCameraPermission(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Akses Kamera Ditolak',
-          description: 'Mohon izinkan akses kamera di pengaturan browser Anda.',
-        });
-      }
-    };
-    getCameraPermission();
-  }, [isCameraOpen, toast]);
-
 
   const transactionType = form.watch('type');
   const selectedLink = form.watch('linkedTo');
@@ -180,11 +138,59 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
         form.setValue('category', '');
       }
     };
-    if (isClient) {
-      fetchMasterData();
+    fetchMasterData();
+  }, [transactionType, form, isOpen]);
+
+  useEffect(() => {
+    if (transactionToEdit) {
+      form.reset({
+        ...transactionToEdit,
+        date: new Date(transactionToEdit.date),
+      });
+    } else {
+      form.reset({
+        type: 'expense',
+        amount: 0,
+        date: new Date(),
+        category: '',
+        fundSource: '',
+        description: '',
+        linkedTo: '',
+      });
     }
-  }, [transactionType, form, isClient]);
+    setImagePreview(null);
+  }, [transactionToEdit, form, isOpen]);
   
+  useEffect(() => {
+    if (isCameraOpen) {
+      const getCameraPermission = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          setHasCameraPermission(true);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Akses Kamera Ditolak',
+            description: 'Mohon izinkan akses kamera di pengaturan browser Anda.',
+          });
+        }
+      };
+      getCameraPermission();
+    } else {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
+    }
+  }, [isCameraOpen, toast]);
+
+
   useEffect(() => {
     if (selectedLink) {
         if (selectedLink.startsWith('goal_')) {
@@ -285,91 +291,44 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const { linkedTo, amount } = values;
-
-    try {
-        if (linkedTo) {
-            const [type, idStr] = linkedTo.split('_');
-            const id = parseInt(idStr, 10);
-            
-            if (type === 'goal') {
-                const goal = await db.goals.get(id);
-                if (goal) {
-                    const newCurrentAmount = goal.currentAmount + amount;
-                    await db.goals.update(id, { currentAmount: newCurrentAmount });
-                }
-            } else if (type === 'investment') {
-                const investment = await db.investments.get(id);
-                if (investment) {
-                    const newInitialAmount = investment.initialAmount + amount;
-                    const newCurrentValue = investment.currentValue + amount;
-                    await db.investments.update(id, { initialAmount: newInitialAmount, currentValue: newCurrentValue });
-                }
-            } else if (type === 'debt' || type === 'receivable') {
-                 const debt = await db.debts.get(id);
-                 if (debt) {
-                    const newCurrentAmount = debt.currentAmount - amount;
-                    const isPaid = newCurrentAmount <= 0;
-                    await db.debts.update(id, { 
-                        currentAmount: Math.max(0, newCurrentAmount),
-                        status: isPaid ? 'paid' : 'unpaid'
-                    });
-                 }
-            }
-        }
-
-        onAddTransaction(values);
-        form.reset({
-            type: 'expense',
-            amount: 0,
-            date: new Date(),
-            category: '',
-            fundSource: '',
-            description: '',
-            linkedTo: '',
-        });
-        setImagePreview(null);
-        toast({ title: 'Sukses', description: 'Transaksi berhasil ditambahkan.' });
-    } catch(error) {
-        console.error("Error linking transaction:", error);
-        toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal menautkan transaksi.' });
+    if (transactionToEdit && transactionToEdit.id !== undefined) {
+      // Logic for updating linked transaction is complex and might require reverting old link and applying new one.
+      // For simplicity, we assume the link cannot be changed upon editing.
+      onUpdateTransaction(transactionToEdit.id, values);
+    } else {
+      await onAddTransaction(values);
     }
   };
 
-  if (!isClient) {
-    return (
-      <Card>
+  return (
+    <UIDialog open={isOpen} onOpenChange={onClose}>
+      <Card className="lg:block hidden">
         <CardHeader>
-          <CardTitle className="font-headline">Tambah Transaksi</CardTitle>
-           <CardDescription>
-            Memuat formulir...
-          </CardDescription>
+          <CardTitle>Transaksi Cepat</CardTitle>
+          <CardDescription>Tambah transaksi baru dengan cepat di sini.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-96">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          </div>
+          <p className="text-muted-foreground text-sm text-center">
+            Klik tombol "Tambah Transaksi" di panel kanan untuk membuka formulir.
+          </p>
         </CardContent>
+        <CardFooter>
+            <Button onClick={onClose} className="w-full">
+                <PlusCircle />
+                Tambah Transaksi
+            </Button>
+        </CardFooter>
       </Card>
-    );
-  }
-
-
-  return (
-    <Card className="relative overflow-hidden">
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}</DialogTitle>
+        </DialogHeader>
         {isProcessing && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm">
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 <p className="mt-4 text-lg text-foreground">Menganalisis struk Anda...</p>
             </div>
         )}
-      <CardHeader>
-        <CardTitle className="font-headline">Tambah Transaksi</CardTitle>
-        <CardDescription>
-          Unggah struk atau gunakan kamera. Biar AI yang mengisi form untukmu, atau kamu bisa mengisi form secara manual.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
         <div className="mb-6 space-y-4">
              <input
                 type="file"
@@ -392,7 +351,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                     </Card>
                 </label>
 
-                <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
+                <UIDialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
                     <DialogTrigger asChild>
                          <Card className="border-2 border-dashed hover:border-primary transition-colors cursor-pointer p-4 h-full">
                             <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground h-full">
@@ -430,7 +389,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                         </Button>
                         </DialogFooter>
                     </DialogContent>
-                </Dialog>
+                </UIDialog>
             </div>
             
             {imagePreview && (
@@ -457,9 +416,8 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                         field.onChange(value);
                         form.setValue('linkedTo', ''); // Reset link on type change
                       }}
-                      defaultValue={field.value}
-                      className="flex space-x-4"
                       value={field.value}
+                      className="flex space-x-4"
                     >
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl>
@@ -550,7 +508,11 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                     <Link2 className="h-4 w-4" />
                     Alokasikan ke (Opsional)
                   </FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value}
+                    disabled={!!transactionToEdit} // Disable if editing
+                    >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Pilih alokasi dana..." />
@@ -579,6 +541,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                         ) : null}
                     </SelectContent>
                   </Select>
+                  {!!transactionToEdit && <p className="text-xs text-muted-foreground">Tautan tidak bisa diubah saat mengedit.</p>}
                   <FormMessage />
                 </FormItem>
               )}
@@ -645,11 +608,11 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
               )}
             />
             <Button type="submit" className="w-full" disabled={isProcessing}>
-              Tambah Transaksi
+              {transactionToEdit ? 'Simpan Perubahan' : 'Tambah Transaksi'}
             </Button>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </UIDialog>
   );
 }
