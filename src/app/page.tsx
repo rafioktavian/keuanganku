@@ -34,6 +34,27 @@ export default function Home() {
   const handleAddTransaction = async (transaction: Omit<Transaction, 'id'>) => {
     const newTransactionWithDate = { ...transaction, date: transaction.date.toISOString() };
     try {
+      const { amount, linkedTo } = transaction;
+
+      // Handle linked transactions
+      if (linkedTo) {
+        const [type, linkedIdStr] = linkedTo.split('_');
+        const linkedId = parseInt(linkedIdStr, 10);
+        
+        if (type === 'goal') {
+            await db.goals.where({id: linkedId}).modify(g => { g.currentAmount += amount });
+        } else if (type === 'investment') {
+            await db.investments.where({id: linkedId}).modify(i => { i.initialAmount += amount });
+        } else if (type === 'debt' || type === 'receivable') {
+            const debt = await db.debts.get(linkedId);
+            if (debt) {
+                const newCurrentAmount = debt.currentAmount - amount;
+                const newStatus = newCurrentAmount <= 0 ? 'paid' : 'unpaid';
+                await db.debts.update(linkedId, { currentAmount: Math.max(0, newCurrentAmount), status: newStatus });
+            }
+        }
+      }
+
       await db.transactions.add(newTransactionWithDate);
       await fetchTransactions(); // Refetch to get the latest data with correct id
       setIsFormOpen(false);
@@ -47,6 +68,10 @@ export default function Home() {
   const handleUpdateTransaction = async (id: number | string, transaction: Omit<Transaction, 'id'>) => {
     const updatedTransaction = { ...transaction, date: transaction.date.toISOString() };
      try {
+      // NOTE: Updating a linked transaction's amount would be complex.
+      // It would require knowing the *original* amount to revert the change
+      // on the linked item and then apply the new one.
+      // For simplicity, this logic is omitted. The link itself is disabled on edit.
       await db.transactions.update(id, updatedTransaction);
       await fetchTransactions();
       setIsFormOpen(false);
@@ -73,12 +98,17 @@ export default function Home() {
         } else if (type === 'investment') {
           await db.investments.where({id: linkedId}).modify(i => {
             i.initialAmount -= amount;
-            i.currentValue -= amount;
+            // Also revert current value if it was a direct top-up. This part is assumption-based.
+            // A more robust system might track investment transactions separately.
+            i.currentValue = Math.max(0, i.currentValue - amount);
            });
         } else if (type === 'debt' || type === 'receivable') {
           await db.debts.where({id: linkedId}).modify(d => { 
             d.currentAmount += amount;
-            d.status = 'unpaid';
+            // If reverting a payment makes it unpaid, change status back
+            if (d.currentAmount > 0) {
+              d.status = 'unpaid';
+            }
            });
         }
       }
@@ -130,17 +160,28 @@ export default function Home() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 flex flex-col gap-8">
-          <TransactionForm 
-            onAddTransaction={handleAddTransaction}
-            onUpdateTransaction={handleUpdateTransaction}
-            onClose={() => setIsFormOpen(false)}
-            isOpen={isFormOpen}
-            transactionToEdit={editingTransaction}
-          />
+          <div className="lg:hidden">
+            <TransactionForm 
+              onAddTransaction={handleAddTransaction}
+              onUpdateTransaction={handleUpdateTransaction}
+              onClose={() => setIsFormOpen(false)}
+              isOpen={isFormOpen}
+              transactionToEdit={editingTransaction}
+            />
+          </div>
           <SavingsAdvisor transactions={transactions} />
           <CategorySummary transactions={filteredTransactions} />
         </div>
         <div className="lg:col-span-2">
+          <div className="hidden lg:block">
+             <TransactionForm 
+              onAddTransaction={handleAddTransaction}
+              onUpdateTransaction={handleUpdateTransaction}
+              onClose={() => setIsFormOpen(false)}
+              isOpen={isFormOpen}
+              transactionToEdit={editingTransaction}
+            />
+          </div>
           <Filters
             onTypeChange={setFilterType}
             onDateChange={setFilterDateRange}

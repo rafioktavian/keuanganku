@@ -12,14 +12,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -30,7 +22,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Calendar as CalendarIcon, Upload, Loader2, Camera, CameraOff, Link2, PlusCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Upload, Loader2, Camera, CameraOff, Link2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -302,23 +294,6 @@ export default function TransactionForm({
 
   return (
     <UIDialog open={isOpen} onOpenChange={onClose}>
-      <Card className="lg:block hidden">
-        <CardHeader>
-          <CardTitle>Transaksi Cepat</CardTitle>
-          <CardDescription>Tambah transaksi baru dengan cepat di sini.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm text-center">
-            Klik tombol "Tambah Transaksi" di panel kanan untuk membuka formulir.
-          </p>
-        </CardContent>
-        <CardFooter>
-            <Button onClick={onClose} className="w-full">
-                <PlusCircle />
-                Tambah Transaksi
-            </Button>
-        </CardFooter>
-      </Card>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}</DialogTitle>
@@ -340,7 +315,7 @@ export default function TransactionForm({
             />
             <div className="grid grid-cols-2 gap-4">
                 <label htmlFor="receipt-upload" className="block">
-                    <Card className="border-2 border-dashed hover:border-primary transition-colors cursor-pointer p-4 h-full">
+                    <div className="border-2 border-dashed hover:border-primary transition-colors cursor-pointer p-4 h-full rounded-lg">
                         <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground h-full">
                             <Upload className="h-8 w-8" />
                             <p className="text-center font-semibold text-sm">
@@ -348,12 +323,12 @@ export default function TransactionForm({
                             </p>
                             <p className="text-xs text-center">Pilih dari galeri</p>
                         </div>
-                    </Card>
+                    </div>
                 </label>
 
                 <UIDialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
                     <DialogTrigger asChild>
-                         <Card className="border-2 border-dashed hover:border-primary transition-colors cursor-pointer p-4 h-full">
+                         <div className="border-2 border-dashed hover:border-primary transition-colors cursor-pointer p-4 h-full rounded-lg">
                             <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground h-full">
                                 <Camera className="h-8 w-8" />
                                 <p className="text-center font-semibold text-sm">
@@ -361,7 +336,7 @@ export default function TransactionForm({
                                 </p>
                                 <p className="text-xs text-center">Ambil foto langsung</p>
                             </div>
-                        </Card>
+                        </div>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
                         <DialogHeader>
@@ -396,7 +371,7 @@ export default function TransactionForm({
                 <div className="mt-4">
                     <p className="text-sm font-medium mb-2 text-center">Pratinjau Gambar:</p>
                     <div className="relative w-full h-48 rounded-md overflow-hidden border">
-                        <Image src={imagePreview} alt="Pratinjau Struk" layout="fill" objectFit="contain" />
+                        <Image src={imagePreview} alt="Pratinjau Struk" fill objectFit="contain" />
                     </div>
                 </div>
             )}
