@@ -40,7 +40,7 @@ export function DatePickerWithRange({
             id="date"
             variant={"outline"}
             className={cn(
-              "w-full sm:w-[300px] justify-start text-left font-normal",
+              "w-full sm:w-[260px] justify-start text-left font-normal",
               !date && "text-muted-foreground"
             )}
           >
@@ -85,9 +85,9 @@ export default function Filters({
 }: FiltersProps) {
   return (
     <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-4">
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <Tabs value={currentType} onValueChange={(value) => onTypeChange(value as 'all' | TransactionType)}>
-                <TabsList>
+        <div className="flex flex-col sm:flex-row gap-4 items-center w-full sm:w-auto">
+            <Tabs value={currentType} onValueChange={(value) => onTypeChange(value as 'all' | TransactionType)} className="w-full sm:w-auto">
+                <TabsList className="w-full sm:w-auto grid grid-cols-3">
                 <TabsTrigger value="all">Semua</TabsTrigger>
                 <TabsTrigger value="income">Pemasukan</TabsTrigger>
                 <TabsTrigger value="expense">Pengeluaran</TabsTrigger>
