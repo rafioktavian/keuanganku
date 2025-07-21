@@ -1,15 +1,24 @@
 import Dexie, { type Table } from 'dexie';
-import type { TransactionDB, Category, FundSource, GoalDB } from './types';
+import type { TransactionDB, Category, FundSource, GoalDB, InvestmentDB } from './types';
 
 export class AppDB extends Dexie {
   transactions!: Table<TransactionDB>;
   categories!: Table<Category>;
   fundSources!: Table<FundSource>;
   goals!: Table<GoalDB>;
+  investments!: Table<InvestmentDB>;
 
 
   constructor() {
     super('KeuanganKuDB');
+    this.version(3).stores({
+      transactions: '++id, date, type, category',
+      categories: '++id, name, type',
+      fundSources: '++id, name',
+      goals: '++id, name, targetDate',
+      investments: '++id, name, type, purchaseDate'
+    });
+    
     this.version(2).stores({
       transactions: '++id, date, type, category',
       categories: '++id, name, type',

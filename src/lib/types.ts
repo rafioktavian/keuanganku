@@ -47,5 +47,17 @@ export interface GoalDB extends Omit<Goal, 'targetDate'> {
     targetDate: string;
 }
 
+export interface Investment {
+    id?: number;
+    name: string;
+    type: string;
+    initialAmount: number;
+    currentValue: number;
+    purchaseDate: Date;
+}
+
+export interface InvestmentDB extends Omit<Investment, 'purchaseDate'> {
+    purchaseDate: string;
+}
 
 export type DateRange = ReactDateRange;
