@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Calendar as CalendarIcon, Upload, Loader2, Camera, CameraOff, Link2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Upload, Loader2, Camera, CameraOff, Link2, PlusCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -48,6 +48,11 @@ const formSchema = z.object({
   fundSource: z.string().min(1, { message: 'Sumber dana harus diisi.' }),
   description: z.string().min(1, { message: 'Deskripsi harus diisi.' }),
   linkedTo: z.string().optional(),
+});
+
+const quickGoalSchema = z.object({
+  name: z.string().min(1, 'Nama tujuan harus diisi.'),
+  targetAmount: z.coerce.number().positive({ message: 'Target harus lebih dari 0.' }),
 });
 
 type TransactionFormProps = {
@@ -101,16 +106,22 @@ export default function TransactionForm({
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
   const [receivables, setReceivables] = useState<Debt[]>([]);
+  
+  const [isQuickGoalOpen, setIsQuickGoalOpen] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
 
+  const quickGoalForm = useForm<z.infer<typeof quickGoalSchema>>({
+    resolver: zodResolver(quickGoalSchema),
+    defaultValues: { name: '', targetAmount: 0 },
+  });
+
   const transactionType = form.watch('type');
   const selectedLink = form.watch('linkedTo');
 
-  useEffect(() => {
-    const fetchMasterData = async () => {
+  const fetchMasterData = async () => {
       const allCategories = await db.categories.toArray();
       const allFundSources = await db.fundSources.toArray();
       const allGoals = await db.goals.toArray();
@@ -130,7 +141,11 @@ export default function TransactionForm({
         form.setValue('category', '');
       }
     };
-    fetchMasterData();
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchMasterData();
+    }
   }, [transactionType, form, isOpen]);
 
   useEffect(() => {
@@ -284,15 +299,33 @@ export default function TransactionForm({
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (transactionToEdit && transactionToEdit.id !== undefined) {
-      // Logic for updating linked transaction is complex and might require reverting old link and applying new one.
-      // For simplicity, we assume the link cannot be changed upon editing.
       onUpdateTransaction(transactionToEdit.id, values);
     } else {
       await onAddTransaction(values);
     }
   };
 
+  const handleQuickAddGoal = async (values: z.infer<typeof quickGoalSchema>) => {
+    try {
+      const newGoal = {
+        ...values,
+        currentAmount: 0,
+        // Set a default far-future date for the target
+        targetDate: new Date('2099-12-31').toISOString(),
+      };
+      const newId = await db.goals.add(newGoal);
+      await fetchMasterData(); // Refresh goal list
+      form.setValue('linkedTo', `goal_${newId}`);
+      toast({ title: 'Sukses', description: 'Tujuan baru berhasil ditambahkan.' });
+      setIsQuickGoalOpen(false);
+      quickGoalForm.reset();
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal menambahkan tujuan.' });
+    }
+  }
+
   return (
+    <>
     <UIDialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -484,7 +517,13 @@ export default function TransactionForm({
                     Alokasikan ke (Opsional)
                   </FormLabel>
                   <Select 
-                    onValueChange={field.onChange} 
+                    onValueChange={(value) => {
+                        if (value === 'add_new_goal') {
+                            setIsQuickGoalOpen(true);
+                        } else {
+                            field.onChange(value);
+                        }
+                    }} 
                     value={field.value}
                     disabled={!!transactionToEdit} // Disable if editing
                     >
@@ -496,6 +535,12 @@ export default function TransactionForm({
                     <SelectContent>
                         {transactionType === 'expense' ? (
                             <>
+                                <SelectItem value="add_new_goal" className="font-semibold text-primary">
+                                    <div className="flex items-center gap-2">
+                                        <PlusCircle className="h-4 w-4"/> Buat Tujuan Baru...
+                                    </div>
+                                </SelectItem>
+
                                 {goals.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Tujuan Keuangan</FormLabel>}
                                 {goals.map(g => <SelectItem key={`goal_${g.id}`} value={`goal_${g.id}`}>Menabung: {g.name}</SelectItem>)}
                                 
@@ -589,5 +634,52 @@ export default function TransactionForm({
         </Form>
       </DialogContent>
     </UIDialog>
+    
+    <UIDialog open={isQuickGoalOpen} onOpenChange={setIsQuickGoalOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Buat Tujuan Baru</DialogTitle>
+            </DialogHeader>
+            <Form {...quickGoalForm}>
+                <form onSubmit={quickGoalForm.handleSubmit(handleQuickAddGoal)} className="space-y-4">
+                    <FormField
+                        control={quickGoalForm.control}
+                        name="name"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Nama Tujuan</FormLabel>
+                            <FormControl>
+                            <Input placeholder="cth: Dana Darurat" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={quickGoalForm.control}
+                        name="targetAmount"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Jumlah Target</FormLabel>
+                            <FormControl>
+                            <Input
+                                placeholder="Rp 10.000.000"
+                                value={formatToRupiah(field.value || 0)}
+                                onChange={e => field.onChange(parseFromRupiah(e.target.value))}
+                            />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <DialogFooter>
+                        <Button type="button" variant="ghost" onClick={() => setIsQuickGoalOpen(false)}>Batal</Button>
+                        <Button type="submit">Simpan Tujuan</Button>
+                    </DialogFooter>
+                </form>
+            </Form>
+        </DialogContent>
+    </UIDialog>
+    </>
   );
 }
