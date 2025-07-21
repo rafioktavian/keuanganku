@@ -1,7 +1,8 @@
+
 'use client';
 
 import React from 'react';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Tooltip, Cell } from 'recharts';
 import {
   Card,
   CardContent,
@@ -36,7 +37,7 @@ export default function CategorySummary({ transactions }: CategorySummaryProps) 
       .map(([category, total], index) => ({
         category,
         total,
-        fill: `var(--color-chart-${(index % 5) + 1})`,
+        fill: `hsl(var(--chart-${(index % 5) + 1}))`,
       }))
       .sort((a, b) => b.total - a.total);
   }, [transactions]);
@@ -65,30 +66,66 @@ export default function CategorySummary({ transactions }: CategorySummaryProps) 
       </CardHeader>
       <CardContent>
         {summaryData.length > 0 ? (
-            <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+            <ChartContainer config={chartConfig} className="min-h-[300px] w-full aspect-square">
             <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={summaryData} layout="vertical" margin={{ left: 10, right: 10 }}>
-                <XAxis type="number" hide />
-                <YAxis
-                    dataKey="category"
-                    type="category"
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                    width={80}
-                />
-                <Tooltip
+               <PieChart>
+                 <Tooltip
                     cursor={{ fill: 'hsl(var(--accent))', radius: 4 }}
                     content={<ChartTooltipContent
-                        formatter={(value) => new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                        }).format(value as number)}
+                        nameKey="category"
+                        formatter={(value, name) => [
+                            new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                minimumFractionDigits: 0,
+                            }).format(value as number),
+                            name
+                        ]}
                     />}
                 />
-                <Bar dataKey="total" radius={4} />
-                </BarChart>
+                 <Pie
+                    data={summaryData}
+                    dataKey="total"
+                    nameKey="category"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    innerRadius={60}
+                    paddingAngle={2}
+                    labelLine={false}
+                    label={({
+                        cx,
+                        cy,
+                        midAngle,
+                        innerRadius,
+                        outerRadius,
+                        percent,
+                        index,
+                      }) => {
+                        const RADIAN = Math.PI / 180;
+                        const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+          
+                        return (
+                          <text
+                            x={x}
+                            y={y}
+                            fill="hsl(var(--card-foreground))"
+                            textAnchor={x > cx ? 'start' : 'end'}
+                            dominantBaseline="central"
+                            className="text-xs font-bold"
+                          >
+                            {`${(percent * 100).toFixed(0)}%`}
+                          </text>
+                        );
+                      }}
+                  >
+                    {summaryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                 </Pie>
+               </PieChart>
             </ResponsiveContainer>
             </ChartContainer>
         ) : (
