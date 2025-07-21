@@ -93,18 +93,21 @@ export default function DebtCard({ debt, onUpdateStatus, onDelete }: DebtCardPro
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
         <div className="p-3 rounded-md" style={{ backgroundColor: isDebt ? 'hsl(var(--destructive)/0.05)' : 'hsl(var(--primary)/0.05)' }}>
-            <div className="flex justify-between items-end mb-1">
+            <div className="flex justify-between items-center mb-1">
                 <span className={cn(
                     "text-2xl font-bold",
                     isDebt ? "text-destructive" : "text-primary"
                 )}>
-                    {formatCurrency(debt.amount)}
+                    {formatCurrency(debt.currentAmount)}
                 </span>
                 <Badge variant={isDebt ? 'destructive' : 'default'} className="capitalize">
                     {isDebt ? 'Utang' : 'Piutang'}
                 </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">{debt.description}</p>
+             <p className="text-xs text-muted-foreground">
+                dari total {formatCurrency(debt.amount)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">{debt.description}</p>
         </div>
         <div className="flex justify-end items-center mt-1">
             {getTimeLeft()}
@@ -114,7 +117,7 @@ export default function DebtCard({ debt, onUpdateStatus, onDelete }: DebtCardPro
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button onClick={handleToggleStatus} variant="secondary">
+                        <Button onClick={handleToggleStatus} variant="secondary" disabled={debt.status === 'paid'}>
                             {debt.status === 'unpaid' ? (
                                 <>
                                 <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
@@ -122,14 +125,14 @@ export default function DebtCard({ debt, onUpdateStatus, onDelete }: DebtCardPro
                                 </>
                             ) : (
                                 <>
-                                <Circle className="mr-2 h-4 w-4 text-yellow-600" />
-                                Tandai Belum Lunas
+                                <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
+                                Sudah Lunas
                                 </>
                             )}
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Ubah status utang/piutang</p>
+                        <p>Ubah status utang/piutang secara manual</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>

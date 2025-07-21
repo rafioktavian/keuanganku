@@ -29,14 +29,14 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Calendar as CalendarIcon, Upload, Loader2, Camera, CameraOff } from 'lucide-react';
+import { Calendar as CalendarIcon, Upload, Loader2, Camera, CameraOff, Link2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
-import { extractTransactionFromImage, ExtractedTransaction } from '@/ai/flows/image-transaction-detector';
+import { extractTransactionFromImage } from '@/ai/flows/image-transaction-detector';
 import { useToast } from '@/hooks/use-toast';
-import type { Transaction, Category, FundSource } from '@/lib/types';
+import type { Transaction, Category, FundSource, Goal, Investment, Debt } from '@/lib/types';
 import { db } from '@/lib/db';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -54,6 +54,7 @@ const formSchema = z.object({
   category: z.string().min(1, { message: 'Kategori harus diisi.' }),
   fundSource: z.string().min(1, { message: 'Sumber dana harus diisi.' }),
   description: z.string().min(1, { message: 'Deskripsi harus diisi.' }),
+  linkedTo: z.string().optional(),
 });
 
 type TransactionFormProps = {
@@ -93,6 +94,11 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
+  // State for linked items
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [investments, setInvestments] = useState<Investment[]>([]);
+  const [debts, setDebts] = useState<Debt[]>([]);
+  const [receivables, setReceivables] = useState<Debt[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -102,6 +108,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
       category: '',
       fundSource: '',
       description: '',
+      linkedTo: '',
     },
   });
   
@@ -114,12 +121,12 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
       category: '',
       fundSource: '',
       description: '',
+      linkedTo: '',
     });
   }, [form]);
   
   useEffect(() => {
     if (!isCameraOpen) {
-      // Stop video stream when dialog is closed
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
@@ -150,12 +157,21 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
 
 
   const transactionType = form.watch('type');
+  const selectedLink = form.watch('linkedTo');
 
   useEffect(() => {
     const fetchMasterData = async () => {
       const allCategories = await db.categories.toArray();
       const allFundSources = await db.fundSources.toArray();
+      const allGoals = await db.goals.toArray();
+      const allInvestments = await db.investments.toArray();
+      const allDebts = await db.debts.toArray();
+
       setFundSources(allFundSources);
+      setGoals(allGoals);
+      setInvestments(allInvestments);
+      setDebts(allDebts.filter(d => d.type === 'debt' && d.status === 'unpaid'));
+      setReceivables(allDebts.filter(d => d.type === 'receivable' && d.status === 'unpaid'));
       
       const filteredCategories = allCategories.filter(c => c.type === transactionType);
       setCategories(filteredCategories);
@@ -168,6 +184,20 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
       fetchMasterData();
     }
   }, [transactionType, form, isClient]);
+  
+  useEffect(() => {
+    if (selectedLink) {
+        if (selectedLink.startsWith('goal_')) {
+            form.setValue('category', 'Tabungan Tujuan');
+        } else if (selectedLink.startsWith('investment_')) {
+            form.setValue('category', 'Investasi');
+        } else if (selectedLink.startsWith('debt_')) {
+            form.setValue('category', 'Pembayaran Utang');
+        } else if (selectedLink.startsWith('receivable_')) {
+            form.setValue('category', 'Penerimaan Piutang');
+        }
+    }
+  }, [selectedLink, form]);
 
   const processImage = async (photoDataUri: string) => {
     setIsProcessing(true);
@@ -254,18 +284,56 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
     }
   };
 
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const { linkedTo, amount } = values;
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    onAddTransaction(values);
-    form.reset({
-      type: 'expense',
-      amount: 0,
-      date: new Date(),
-      category: '',
-      fundSource: '',
-      description: '',
-    });
-    setImagePreview(null);
+    try {
+        if (linkedTo) {
+            const [type, idStr] = linkedTo.split('_');
+            const id = parseInt(idStr, 10);
+            
+            if (type === 'goal') {
+                const goal = await db.goals.get(id);
+                if (goal) {
+                    const newCurrentAmount = goal.currentAmount + amount;
+                    await db.goals.update(id, { currentAmount: newCurrentAmount });
+                }
+            } else if (type === 'investment') {
+                const investment = await db.investments.get(id);
+                if (investment) {
+                    const newInitialAmount = investment.initialAmount + amount;
+                    const newCurrentValue = investment.currentValue + amount;
+                    await db.investments.update(id, { initialAmount: newInitialAmount, currentValue: newCurrentValue });
+                }
+            } else if (type === 'debt' || type === 'receivable') {
+                 const debt = await db.debts.get(id);
+                 if (debt) {
+                    const newCurrentAmount = debt.currentAmount - amount;
+                    const isPaid = newCurrentAmount <= 0;
+                    await db.debts.update(id, { 
+                        currentAmount: Math.max(0, newCurrentAmount),
+                        status: isPaid ? 'paid' : 'unpaid'
+                    });
+                 }
+            }
+        }
+
+        onAddTransaction(values);
+        form.reset({
+            type: 'expense',
+            amount: 0,
+            date: new Date(),
+            category: '',
+            fundSource: '',
+            description: '',
+            linkedTo: '',
+        });
+        setImagePreview(null);
+        toast({ title: 'Sukses', description: 'Transaksi berhasil ditambahkan.' });
+    } catch(error) {
+        console.error("Error linking transaction:", error);
+        toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal menautkan transaksi.' });
+    }
   };
 
   if (!isClient) {
@@ -387,6 +455,7 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                     <RadioGroup
                       onValueChange={(value) => {
                         field.onChange(value);
+                        form.setValue('linkedTo', ''); // Reset link on type change
                       }}
                       defaultValue={field.value}
                       className="flex space-x-4"
@@ -471,13 +540,57 @@ export default function TransactionForm({ onAddTransaction }: TransactionFormPro
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="linkedTo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Link2 className="h-4 w-4" />
+                    Alokasikan ke (Opsional)
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih alokasi dana..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {transactionType === 'expense' ? (
+                            <>
+                                {goals.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Tujuan Keuangan</FormLabel>}
+                                {goals.map(g => <SelectItem key={`goal_${g.id}`} value={`goal_${g.id}`}>Menabung: {g.name}</SelectItem>)}
+                                
+                                {investments.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Investasi</FormLabel>}
+                                {investments.map(i => <SelectItem key={`investment_${i.id}`} value={`investment_${i.id}`}>Investasi: {i.name}</SelectItem>)}
+                                
+                                {debts.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Utang</FormLabel>}
+                                {debts.map(d => <SelectItem key={`debt_${d.id}`} value={`debt_${d.id}`}>Bayar utang: {d.personName}</SelectItem>)}
+                            </>
+                        ) : (
+                            <>
+                                {receivables.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Piutang</FormLabel>}
+                                {receivables.map(r => <SelectItem key={`receivable_${r.id}`} value={`receivable_${r.id}`}>Terima dari: {r.personName}</SelectItem>)}
+                            </>
+                        )}
+                        {(transactionType === 'expense' && goals.length === 0 && investments.length === 0 && debts.length === 0) || (transactionType === 'income' && receivables.length === 0) ? (
+                            <p className="p-2 text-sm text-muted-foreground">Tidak ada item yang bisa ditautkan.</p>
+                        ) : null}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="category"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Kategori</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={!!form.watch('linkedTo')}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Pilih Kategori" />

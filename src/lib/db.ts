@@ -12,6 +12,23 @@ export class AppDB extends Dexie {
 
   constructor() {
     super('KeuanganKuDB');
+    this.version(5).stores({
+      transactions: '++id, date, type, category',
+      categories: '++id, name, type',
+      fundSources: '++id, name',
+      goals: '++id, name, targetDate',
+      investments: '++id, name, type, purchaseDate',
+      debts: '++id, type, status, dueDate', // amount -> currentAmount
+    }).upgrade(tx => {
+        return tx.table('debts').toCollection().modify(debt => {
+            // Add currentAmount field and initialize it with the total amount
+            // for existing debt records.
+            if (typeof debt.currentAmount === 'undefined') {
+                debt.currentAmount = debt.amount;
+            }
+        });
+    });
+
     this.version(4).stores({
       transactions: '++id, date, type, category',
       categories: '++id, name, type',
@@ -58,6 +75,7 @@ export class AppDB extends Dexie {
         // Pemasukan
         { name: 'Gaji', type: 'income' },
         { name: 'Bonus', type: 'income' },
+        { name: 'Penerimaan Piutang', type: 'income' },
         { name: 'Hadiah', type: 'income' },
         { name: 'Lainnya', type: 'income' },
 
@@ -69,6 +87,9 @@ export class AppDB extends Dexie {
         { name: 'Hiburan', type: 'expense' },
         { name: 'Kesehatan', type: 'expense' },
         { name: 'Pendidikan', type: 'expense' },
+        { name: 'Tabungan Tujuan', type: 'expense' },
+        { name: 'Investasi', type: 'expense' },
+        { name: 'Pembayaran Utang', type: 'expense' },
         { name: 'Lainnya', type: 'expense' },
     ]);
     await db.fundSources.bulkAdd([

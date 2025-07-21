@@ -36,6 +36,8 @@ export default function DebtsDashboard() {
     try {
       await db.debts.add({
         ...debt,
+        amount: debt.amount,
+        currentAmount: debt.amount,
         dueDate: debt.dueDate.toISOString(),
       });
       setIsDialogOpen(false);
@@ -46,7 +48,16 @@ export default function DebtsDashboard() {
 
   const handleUpdateStatus = async (id: number, status: 'paid' | 'unpaid') => {
     try {
-      await db.debts.update(id, { status });
+        if (status === 'paid') {
+            await db.debts.update(id, { status, currentAmount: 0 });
+        } else {
+            // This case might not be used if the button is disabled when paid
+            // but is here for completeness.
+            const debt = await db.debts.get(id);
+            if(debt) {
+                await db.debts.update(id, { status, currentAmount: debt.amount });
+            }
+        }
     } catch (error) {
       console.error('Failed to update debt status:', error);
     }
@@ -64,9 +75,9 @@ export default function DebtsDashboard() {
     (acc, curr) => {
       if (curr.status === 'unpaid') {
         if (curr.type === 'debt') {
-          acc.totalDebt += curr.amount;
+          acc.totalDebt += curr.currentAmount;
         } else {
-          acc.totalReceivable += curr.amount;
+          acc.totalReceivable += curr.currentAmount;
         }
       }
       return acc;
@@ -137,7 +148,7 @@ export default function DebtsDashboard() {
             ) : (
                 <div className="text-center py-16 border-2 border-dashed rounded-lg mt-6">
                 <h3 className="text-xl font-semibold text-muted-foreground">Bagus! Tidak Ada Utang</h3>
-                <p className="text-muted-foreground mt-2">Anda tidak memiliki catatan utang yang belum lunas.</p>
+                <p className="text-muted-foreground mt-2">Anda tidak memiliki catatan utang.</p>
                 </div>
             )}
         </TabsContent>

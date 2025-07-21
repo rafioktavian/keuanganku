@@ -43,7 +43,7 @@ const formSchema = z.object({
 });
 
 interface AddDebtFormProps {
-  onAddDebt: (debt: Omit<Debt, 'id' | 'status'>) => void;
+  onAddDebt: (debt: Omit<Debt, 'id' | 'status' | 'currentAmount'>) => void;
 }
 
 const formatToRupiah = (value: number | string) => {
@@ -69,7 +69,7 @@ export default function AddDebtForm({ onAddDebt }: AddDebtFormProps) {
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    onAddDebt({ ...values, status: 'unpaid' });
+    onAddDebt({ ...values, status: 'unpaid', currentAmount: values.amount });
     form.reset();
   };
 

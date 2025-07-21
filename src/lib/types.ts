@@ -68,6 +68,7 @@ export interface Debt {
     type: DebtType;
     personName: string;
     amount: number;
+    currentAmount: number; // Sisa utang/piutang
     dueDate: Date;
     status: DebtStatus;
     description: string;
