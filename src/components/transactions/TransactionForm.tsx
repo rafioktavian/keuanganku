@@ -217,8 +217,6 @@ function TransactionFormContent({
 
     const processImage = async (photoDataUri: string) => {
         setIsProcessing(true);
-        setImagePreview(photoDataUri);
-
         try {
             const allCategories = await db.categories.toArray();
             const allFundSources = await db.fundSources.toArray();
@@ -280,6 +278,7 @@ function TransactionFormContent({
         reader.onload = (e) => {
             const photoDataUri = e.target?.result as string;
             if (photoDataUri) {
+                setImagePreview(photoDataUri);
                 processImage(photoDataUri);
             } else {
                  toast({
@@ -303,6 +302,7 @@ function TransactionFormContent({
         context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
         const photoDataUri = canvas.toDataURL('image/jpeg');
         setIsCameraOpen(false);
+        setImagePreview(photoDataUri);
         processImage(photoDataUri);
         }
     };
@@ -318,21 +318,21 @@ function TransactionFormContent({
 
     const handleQuickAddGoal = async (values: z.infer<typeof quickGoalSchema>) => {
         try {
-        const newGoal = {
-            ...values,
-            currentAmount: 0,
-            targetDate: new Date('2099-12-31').toISOString(),
-        };
-        const newId = await db.goals.add(newGoal);
-        await fetchMasterData(); 
-        form.setValue('linkedTo', `goal_${newId}`);
-        toast({ title: 'Sukses', description: 'Tujuan baru berhasil ditambahkan.' });
-        setIsQuickGoalOpen(false);
-        quickGoalForm.reset();
+            const newGoal = {
+                ...values,
+                currentAmount: 0,
+                targetDate: new Date('2099-12-31').toISOString(),
+            };
+            const newId = await db.goals.add(newGoal);
+            await fetchMasterData(); 
+            form.setValue('linkedTo', `goal_${newId}`);
+            toast({ title: 'Sukses', description: 'Tujuan baru berhasil ditambahkan.' });
+            setIsQuickGoalOpen(false);
+            quickGoalForm.reset();
         } catch (error) {
-        toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal menambahkan tujuan.' });
+            toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal menambahkan tujuan.' });
         }
-    }
+    };
     
     const TitleComponent = isSheet ? SheetTitle : 'h2';
 
@@ -715,7 +715,7 @@ export default function TransactionForm(props: TransactionFormProps) {
 
   // For larger screens, use a static form.
   if (window.innerWidth >= 1024) {
-    if (!isOpen) return null; // Don't render anything if not open
+    if (!props.isOpen) return null; // Don't render anything if not open
     return (
         <div className="p-6 border rounded-lg bg-card shadow-sm mb-8 relative">
             <TransactionFormContent {...props} isSheet={false} />
@@ -727,12 +727,7 @@ export default function TransactionForm(props: TransactionFormProps) {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
-        <SheetHeader>
-            <SheetTitle>
-                {props.transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}
-            </SheetTitle>
-        </SheetHeader>
-        <div className="p-4">
+         <div className="p-4">
             <TransactionFormContent {...props} isSheet={true} />
         </div>
       </SheetContent>
