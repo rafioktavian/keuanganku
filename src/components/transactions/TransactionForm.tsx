@@ -277,9 +277,6 @@ function TransactionFormContent({
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onloadstart = () => {
-            setIsProcessing(true);
-        };
         reader.onload = (e) => {
             const photoDataUri = e.target?.result as string;
             if (photoDataUri) {
@@ -290,16 +287,7 @@ function TransactionFormContent({
                     title: 'Gagal Membaca File',
                     description: 'Tidak dapat membaca file gambar yang dipilih.',
                 });
-                setIsProcessing(false);
             }
-        };
-        reader.onerror = () => {
-            toast({
-                variant: 'destructive',
-                title: 'Gagal Membaca File',
-                description: 'Terjadi kesalahan saat membaca file gambar.',
-            });
-            setIsProcessing(false);
         };
         reader.readAsDataURL(file);
     };
@@ -739,6 +727,11 @@ export default function TransactionForm(props: TransactionFormProps) {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
+        <SheetHeader>
+            <SheetTitle>
+                {props.transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}
+            </SheetTitle>
+        </SheetHeader>
         <div className="p-4">
             <TransactionFormContent {...props} isSheet={true} />
         </div>
