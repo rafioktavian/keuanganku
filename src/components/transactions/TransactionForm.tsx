@@ -272,11 +272,14 @@ function TransactionFormContent({
         }
     };
     
-    const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
         const reader = new FileReader();
+        reader.onloadstart = () => {
+            setIsProcessing(true);
+        };
         reader.onload = (e) => {
             const photoDataUri = e.target?.result as string;
             if (photoDataUri) {
@@ -287,6 +290,7 @@ function TransactionFormContent({
                     title: 'Gagal Membaca File',
                     description: 'Tidak dapat membaca file gambar yang dipilih.',
                 });
+                setIsProcessing(false);
             }
         };
         reader.onerror = () => {
@@ -295,6 +299,7 @@ function TransactionFormContent({
                 title: 'Gagal Membaca File',
                 description: 'Terjadi kesalahan saat membaca file gambar.',
             });
+            setIsProcessing(false);
         };
         reader.readAsDataURL(file);
     };
