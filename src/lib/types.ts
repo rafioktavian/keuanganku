@@ -79,5 +79,11 @@ export interface DebtDB extends Omit<Debt, 'dueDate'> {
     dueDate: string;
 }
 
+export interface CashFlowData {
+    month: string;
+    income: number;
+    expense: number;
+}
+
 
 export type DateRange = ReactDateRange;
