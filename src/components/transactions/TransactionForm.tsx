@@ -34,7 +34,7 @@ import { db } from '@/lib/db';
 import Image from 'next/image';
 import { Dialog as UIDialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 
 const formSchema = z.object({
@@ -243,7 +243,6 @@ function TransactionFormContent({
                 transactionDate = new Date();
             }
             
-            // Use setValue for each field to ensure re-render
             form.setValue('type', result.isIncome ? 'income' : 'expense');
             form.setValue('amount', result.amount);
             form.setValue('date', transactionDate);
@@ -278,15 +277,26 @@ function TransactionFormContent({
         if (!file) return;
 
         const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => processImage(reader.result as string);
-        reader.onerror = () => {
-        toast({
-            variant: 'destructive',
-            title: 'Gagal Membaca File',
-            description: 'Tidak dapat membaca file gambar.',
-        });
+        reader.onload = (e) => {
+            const photoDataUri = e.target?.result as string;
+            if (photoDataUri) {
+                processImage(photoDataUri);
+            } else {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Gagal Membaca File',
+                    description: 'Tidak dapat membaca file gambar yang dipilih.',
+                });
+            }
         };
+        reader.onerror = () => {
+            toast({
+                variant: 'destructive',
+                title: 'Gagal Membaca File',
+                description: 'Terjadi kesalahan saat membaca file gambar.',
+            });
+        };
+        reader.readAsDataURL(file);
     };
     
     const handleCapture = () => {
@@ -321,7 +331,7 @@ function TransactionFormContent({
             targetDate: new Date('2099-12-31').toISOString(),
         };
         const newId = await db.goals.add(newGoal);
-        await fetchMasterData(); // Refresh goal list
+        await fetchMasterData(); 
         form.setValue('linkedTo', `goal_${newId}`);
         toast({ title: 'Sukses', description: 'Tujuan baru berhasil ditambahkan.' });
         setIsQuickGoalOpen(false);
@@ -331,7 +341,7 @@ function TransactionFormContent({
         }
     }
     
-    const TitleComponent = isSheet ? SheetTitle : 'h2' as React.ElementType;
+    const TitleComponent = isSheet ? SheetTitle : 'h2';
 
     return (
         <div className="relative">
@@ -699,7 +709,7 @@ function TransactionFormContent({
 
 
 export default function TransactionForm(props: TransactionFormProps) {
-  const { isOpen, onClose, transactionToEdit } = props;
+  const { isOpen, onClose } = props;
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -724,10 +734,8 @@ export default function TransactionForm(props: TransactionFormProps) {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
-        <div className="py-4">
-             <SheetHeader className="text-left mb-4">
-                <TransactionFormContent {...props} isSheet={true} />
-            </SheetHeader>
+        <div className="p-4">
+            <TransactionFormContent {...props} isSheet={true} />
         </div>
       </SheetContent>
     </Sheet>
