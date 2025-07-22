@@ -87,7 +87,7 @@ function TransactionFormContent({
   onUpdateTransaction,
   onClose,
   transactionToEdit,
-  isSheet = false, // New prop to determine context
+  isSheet = false,
 }: Omit<TransactionFormProps, 'isOpen'> & { isSheet?: boolean }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -220,52 +220,56 @@ function TransactionFormContent({
         setImagePreview(photoDataUri);
 
         try {
-        const allCategories = await db.categories.toArray();
-        const allFundSources = await db.fundSources.toArray();
-        const incomeCategories = allCategories.filter(c => c.type === 'income').map(c => c.name);
-        const expenseCategories = allCategories.filter(c => c.type === 'expense').map(c => c.name);
-        const fundSourceNames = allFundSources.map(fs => fs.name);
+            const allCategories = await db.categories.toArray();
+            const allFundSources = await db.fundSources.toArray();
+            const incomeCategories = allCategories.filter(c => c.type === 'income').map(c => c.name);
+            const expenseCategories = allCategories.filter(c => c.type === 'expense').map(c => c.name);
+            const fundSourceNames = allFundSources.map(fs => fs.name);
 
-        const result = await extractTransactionFromImage({
-            photoDataUri,
-            incomeCategories: incomeCategories.join(','),
-            expenseCategories: expenseCategories.join(','),
-            fundSources: fundSourceNames.join(','),
-        });
-
-        let transactionDate = new Date(result.date);
-        if (isNaN(transactionDate.getTime())) {
-            toast({
-            variant: 'destructive',
-            title: 'Tanggal Tidak Valid',
-            description: 'AI tidak dapat mendeteksi tanggal yang valid. Menggunakan tanggal hari ini.',
+            const result = await extractTransactionFromImage({
+                photoDataUri,
+                incomeCategories: incomeCategories.join(','),
+                expenseCategories: expenseCategories.join(','),
+                fundSources: fundSourceNames.join(','),
             });
-            transactionDate = new Date();
-        }
-        
-        form.reset({
-            ...result,
-            type: result.isIncome ? 'income' : 'expense',
-            date: transactionDate,
-            fundSource: result.source || form.getValues('fundSource')
-        });
-        toast({
-            title: "Sukses!",
-            description: "Detail transaksi berhasil diekstrak dari gambar.",
-        });
+
+            let transactionDate = new Date(result.date);
+            if (isNaN(transactionDate.getTime())) {
+                toast({
+                variant: 'destructive',
+                title: 'Tanggal Tidak Valid',
+                description: 'AI tidak dapat mendeteksi tanggal yang valid. Menggunakan tanggal hari ini.',
+                });
+                transactionDate = new Date();
+            }
+            
+            // Use setValue for each field to ensure re-render
+            form.setValue('type', result.isIncome ? 'income' : 'expense');
+            form.setValue('amount', result.amount);
+            form.setValue('date', transactionDate);
+            form.setValue('description', result.description);
+            form.setValue('category', result.category);
+            if (result.source) {
+                form.setValue('fundSource', result.source);
+            }
+            
+            toast({
+                title: "Sukses!",
+                description: "Detail transaksi berhasil diekstrak dari gambar.",
+            });
 
         } catch (error) {
-        console.error('AI Error:', error);
-        toast({
-            variant: 'destructive',
-            title: 'Ekstraksi Gagal',
-            description: 'Tidak dapat mengekstrak detail dari gambar. Silakan masukkan secara manual.',
-        });
+            console.error('AI Error:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Ekstraksi Gagal',
+                description: 'Tidak dapat mengekstrak detail dari gambar. Silakan masukkan secara manual.',
+            });
         } finally {
-        setIsProcessing(false);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+            setIsProcessing(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         }
     };
     
@@ -327,21 +331,7 @@ function TransactionFormContent({
         }
     }
     
-    const FormHeader = () => {
-        const title = transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru';
-        if (isSheet) {
-            return (
-                <SheetHeader className="mb-4">
-                    <SheetTitle>{title}</SheetTitle>
-                </SheetHeader>
-            );
-        }
-        return (
-            <div className="mb-4">
-                <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-            </div>
-        );
-    };
+    const TitleComponent = isSheet ? SheetTitle : 'h2' as React.ElementType;
 
     return (
         <>
@@ -352,8 +342,10 @@ function TransactionFormContent({
             </div>
         )}
         
-        <FormHeader />
-        
+        <TitleComponent className={cn(!isSheet && "text-lg font-semibold text-foreground mb-4")}>
+            {transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}
+        </TitleComponent>
+
         <div className="mb-6 space-y-4">
              <input
                 type="file"
@@ -705,7 +697,7 @@ function TransactionFormContent({
 
 
 export default function TransactionForm(props: TransactionFormProps) {
-  const { isOpen, onClose } = props;
+  const { isOpen, onClose, transactionToEdit } = props;
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -730,6 +722,9 @@ export default function TransactionForm(props: TransactionFormProps) {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
+        <SheetHeader>
+           {/* The title is now inside TransactionFormContent */}
+        </SheetHeader>
         <div className="py-4">
             <TransactionFormContent {...props} isSheet={true} />
         </div>
