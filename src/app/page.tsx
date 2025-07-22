@@ -34,7 +34,7 @@ export default function Home() {
   const handleAddTransaction = async (transaction: Omit<Transaction, 'id'>) => {
     const newTransactionWithDate = { ...transaction, date: transaction.date.toISOString() };
     try {
-      const { amount, linkedTo } = transaction;
+      const { amount, linkedTo, type: transactionType } = transaction;
 
       // Handle linked transactions
       if (linkedTo) {
@@ -44,7 +44,24 @@ export default function Home() {
         if (type === 'goal') {
             await db.goals.where({id: linkedId}).modify(g => { g.currentAmount += amount });
         } else if (type === 'investment') {
-            await db.investments.where({id: linkedId}).modify(i => { i.initialAmount += amount });
+            if (transactionType === 'expense') {
+              // Add to investment (top up)
+              await db.investments.where({id: linkedId}).modify(i => { 
+                i.initialAmount += amount;
+                i.currentValue += amount; // Assuming top up also increases current value
+              });
+            } else { // income
+              // Divestment (sell)
+              await db.investments.where({id: linkedId}).modify(i => {
+                const proportion = amount / i.currentValue;
+                if (proportion < 1) {
+                  i.initialAmount = Math.max(0, i.initialAmount * (1 - proportion));
+                } else {
+                  i.initialAmount = 0; // Sold everything
+                }
+                i.currentValue = Math.max(0, i.currentValue - amount);
+              });
+            }
         } else if (type === 'debt' || type === 'receivable') {
             const debt = await db.debts.get(linkedId);
             if (debt) {
@@ -85,7 +102,7 @@ export default function Home() {
 
 
   const handleDeleteTransaction = async (transaction: Transaction) => {
-    const { id, amount, linkedTo } = transaction;
+    const { id, amount, linkedTo, type: transactionType } = transaction;
     if (id === undefined) return;
     
     try {
@@ -96,12 +113,19 @@ export default function Home() {
         if (type === 'goal') {
           await db.goals.where({id: linkedId}).modify(g => { g.currentAmount -= amount });
         } else if (type === 'investment') {
-          await db.investments.where({id: linkedId}).modify(i => {
-            i.initialAmount -= amount;
-            // Also revert current value if it was a direct top-up. This part is assumption-based.
-            // A more robust system might track investment transactions separately.
-            i.currentValue = Math.max(0, i.currentValue - amount);
-           });
+          if (transactionType === 'expense') { // Revert a top-up
+            await db.investments.where({id: linkedId}).modify(i => {
+              i.initialAmount -= amount;
+              i.currentValue -= amount;
+             });
+          } else { // Revert a divestment
+             await db.investments.where({id: linkedId}).modify(i => {
+              // This is complex as we don't know the original initialAmount proportion.
+              // Simplification: add back the amount to both.
+              i.currentValue += amount;
+              i.initialAmount += amount; // Approximate reversal
+             });
+          }
         } else if (type === 'debt' || type === 'receivable') {
           await db.debts.where({id: linkedId}).modify(d => { 
             d.currentAmount += amount;

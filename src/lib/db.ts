@@ -76,6 +76,7 @@ export class AppDB extends Dexie {
         { name: 'Gaji', type: 'income' },
         { name: 'Bonus', type: 'income' },
         { name: 'Penerimaan Piutang', type: 'income' },
+        { name: 'Divestasi', type: 'income' },
         { name: 'Hadiah', type: 'income' },
         { name: 'Lainnya', type: 'income' },
 

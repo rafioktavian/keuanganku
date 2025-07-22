@@ -202,15 +202,17 @@ export default function TransactionForm({
     if (selectedLink) {
         if (selectedLink.startsWith('goal_')) {
             form.setValue('category', 'Tabungan Tujuan');
-        } else if (selectedLink.startsWith('investment_')) {
+        } else if (selectedLink.startsWith('investment_') && transactionType === 'expense') {
             form.setValue('category', 'Investasi');
+        } else if (selectedLink.startsWith('investment_') && transactionType === 'income') {
+            form.setValue('category', 'Divestasi');
         } else if (selectedLink.startsWith('debt_')) {
             form.setValue('category', 'Pembayaran Utang');
         } else if (selectedLink.startsWith('receivable_')) {
             form.setValue('category', 'Penerimaan Piutang');
         }
     }
-  }, [selectedLink, form]);
+  }, [selectedLink, transactionType, form]);
 
   const processImage = async (photoDataUri: string) => {
     setIsProcessing(true);
@@ -550,13 +552,16 @@ export default function TransactionForm({
                                 {debts.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Utang</FormLabel>}
                                 {debts.map(d => <SelectItem key={`debt_${d.id}`} value={`debt_${d.id}`}>Bayar utang: {d.personName}</SelectItem>)}
                             </>
-                        ) : (
+                        ) : ( // income
                             <>
+                                {investments.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Investasi</FormLabel>}
+                                {investments.map(i => <SelectItem key={`investment_${i.id}`} value={`investment_${i.id}`}>Divestasi: {i.name}</SelectItem>)}
+
                                 {receivables.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Piutang</FormLabel>}
                                 {receivables.map(r => <SelectItem key={`receivable_${r.id}`} value={`receivable_${r.id}`}>Terima dari: {r.personName}</SelectItem>)}
                             </>
                         )}
-                        {(transactionType === 'expense' && goals.length === 0 && investments.length === 0 && debts.length === 0) || (transactionType === 'income' && receivables.length === 0) ? (
+                        {(transactionType === 'expense' && goals.length === 0 && investments.length === 0 && debts.length === 0) || (transactionType === 'income' && receivables.length === 0 && investments.length === 0) ? (
                             <p className="p-2 text-sm text-muted-foreground">Tidak ada item yang bisa ditautkan.</p>
                         ) : null}
                     </SelectContent>
