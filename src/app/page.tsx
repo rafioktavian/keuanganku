@@ -53,11 +53,16 @@ export default function Home() {
             } else { // income
               // Divestment (sell)
               await db.investments.where({id: linkedId}).modify(i => {
-                const proportion = amount / i.currentValue;
-                if (proportion < 1) {
-                  i.initialAmount = Math.max(0, i.initialAmount * (1 - proportion));
-                } else {
-                  i.initialAmount = 0; // Sold everything
+                // Ensure currentValue is not zero to avoid division by zero
+                if (i.currentValue > 0) {
+                    const proportion = amount / i.currentValue;
+                    if (proportion < 1) {
+                      // If selling a portion, reduce initialAmount proportionally
+                      i.initialAmount = i.initialAmount * (1 - proportion);
+                    } else {
+                      // If selling all or more than current value, initial amount becomes 0
+                      i.initialAmount = 0; 
+                    }
                 }
                 i.currentValue = Math.max(0, i.currentValue - amount);
               });
@@ -113,18 +118,33 @@ export default function Home() {
         if (type === 'goal') {
           await db.goals.where({id: linkedId}).modify(g => { g.currentAmount -= amount });
         } else if (type === 'investment') {
-          if (transactionType === 'expense') { // Revert a top-up
-            await db.investments.where({id: linkedId}).modify(i => {
-              i.initialAmount -= amount;
-              i.currentValue -= amount;
-             });
-          } else { // Revert a divestment
-             await db.investments.where({id: linkedId}).modify(i => {
-              // This is complex as we don't know the original initialAmount proportion.
-              // Simplification: add back the amount to both.
-              i.currentValue += amount;
-              i.initialAmount += amount; // Approximate reversal
-             });
+          const investment = await db.investments.get(linkedId);
+          if (investment) {
+              if (transactionType === 'expense') { // Revert a top-up
+                await db.investments.update(linkedId, { 
+                  initialAmount: investment.initialAmount - amount,
+                  currentValue: investment.currentValue - amount
+                });
+              } else { // Revert a divestment
+                const valueAfterSale = investment.currentValue;
+                const valueBeforeSale = valueAfterSale + amount;
+                let initialAmountBeforeSale = investment.initialAmount;
+
+                // Re-calculate initialAmount before the sale
+                if (valueBeforeSale > 0) {
+                  const proportionRemaining = valueAfterSale / valueBeforeSale;
+                  initialAmountBeforeSale = investment.initialAmount / proportionRemaining;
+                } else {
+                  // If all was sold, we can't perfectly recover the initial amount proportion.
+                  // As a fallback, just add the amount back. This is an approximation.
+                  initialAmountBeforeSale = investment.initialAmount + amount;
+                }
+                
+                await db.investments.update(linkedId, {
+                  currentValue: valueBeforeSale,
+                  initialAmount: initialAmountBeforeSale,
+                });
+              }
           }
         } else if (type === 'debt' || type === 'receivable') {
           await db.debts.where({id: linkedId}).modify(d => { 
@@ -191,6 +211,7 @@ export default function Home() {
               onClose={() => setIsFormOpen(false)}
               isOpen={isFormOpen}
               transactionToEdit={editingTransaction}
+              key={editingTransaction ? editingTransaction.id : 'add'}
             />
           </div>
           <SavingsAdvisor transactions={transactions} />
@@ -204,6 +225,7 @@ export default function Home() {
               onClose={() => setIsFormOpen(false)}
               isOpen={isFormOpen}
               transactionToEdit={editingTransaction}
+              key={editingTransaction ? `edit-${editingTransaction.id}` : 'add-desktop'}
             />
           </div>
           <Filters

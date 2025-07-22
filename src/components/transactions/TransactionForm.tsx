@@ -34,6 +34,7 @@ import { db } from '@/lib/db';
 import Image from 'next/image';
 import { Dialog as UIDialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from '@/components/ui/sheet';
 
 
 const formSchema = z.object({
@@ -81,258 +82,255 @@ const parseFromRupiah = (value: string) => {
 };
 
 
-export default function TransactionForm({
+function TransactionFormContent({
   onAddTransaction,
   onUpdateTransaction,
   onClose,
-  isOpen,
   transactionToEdit,
-}: TransactionFormProps) {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+}: Omit<TransactionFormProps, 'isOpen'>) {
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const { toast } = useToast();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [fundSources, setFundSources] = useState<FundSource[]>([]);
-  
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+    const { toast } = useToast();
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [fundSources, setFundSources] = useState<FundSource[]>([]);
+    
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
-  // State for linked items
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [investments, setInvestments] = useState<Investment[]>([]);
-  const [debts, setDebts] = useState<Debt[]>([]);
-  const [receivables, setReceivables] = useState<Debt[]>([]);
-  
-  const [isQuickGoalOpen, setIsQuickGoalOpen] = useState(false);
+    // State for linked items
+    const [goals, setGoals] = useState<Goal[]>([]);
+    const [investments, setInvestments] = useState<Investment[]>([]);
+    const [debts, setDebts] = useState<Debt[]>([]);
+    const [receivables, setReceivables] = useState<Debt[]>([]);
+    
+    const [isQuickGoalOpen, setIsQuickGoalOpen] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-  });
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+    });
 
-  const quickGoalForm = useForm<z.infer<typeof quickGoalSchema>>({
-    resolver: zodResolver(quickGoalSchema),
-    defaultValues: { name: '', targetAmount: 0 },
-  });
+    const quickGoalForm = useForm<z.infer<typeof quickGoalSchema>>({
+        resolver: zodResolver(quickGoalSchema),
+        defaultValues: { name: '', targetAmount: 0 },
+    });
 
-  const transactionType = form.watch('type');
-  const selectedLink = form.watch('linkedTo');
+    const transactionType = form.watch('type');
+    const selectedLink = form.watch('linkedTo');
 
-  const fetchMasterData = async () => {
-      const allCategories = await db.categories.toArray();
-      const allFundSources = await db.fundSources.toArray();
-      const allGoals = await db.goals.toArray();
-      const allInvestments = await db.investments.toArray();
-      const allDebts = await db.debts.toArray();
+    const fetchMasterData = async () => {
+        const allCategories = await db.categories.toArray();
+        const allFundSources = await db.fundSources.toArray();
+        const allGoals = await db.goals.toArray();
+        const allInvestments = await db.investments.toArray();
+        const allDebts = await db.debts.toArray();
 
-      setFundSources(allFundSources);
-      setGoals(allGoals);
-      setInvestments(allInvestments);
-      setDebts(allDebts.filter(d => d.type === 'debt' && d.status === 'unpaid'));
-      setReceivables(allDebts.filter(d => d.type === 'receivable' && d.status === 'unpaid'));
-      
-      const filteredCategories = allCategories.filter(c => c.type === transactionType);
-      setCategories(filteredCategories);
-
-      if (!filteredCategories.some(c => c.name === form.getValues('category'))) {
-        form.setValue('category', '');
-      }
+        setFundSources(allFundSources);
+        setGoals(allGoals);
+        setInvestments(allInvestments);
+        setDebts(allDebts.filter(d => d.type === 'debt' && d.status === 'unpaid'));
+        setReceivables(allDebts.filter(d => d.type === 'receivable' && d.status === 'unpaid'));
+        
+        const currentType = form.getValues('type') || 'expense';
+        const filteredCategories = allCategories.filter(c => c.type === currentType);
+        setCategories(filteredCategories);
+        
+        const currentCategory = form.getValues('category');
+        if (currentCategory && !filteredCategories.some(c => c.name === currentCategory)) {
+            form.setValue('category', '');
+        }
     };
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchMasterData();
-    }
-  }, [transactionType, form, isOpen]);
+    useEffect(() => {
+        fetchMasterData();
+    }, [transactionType, form]);
 
-  useEffect(() => {
-    if (transactionToEdit) {
-      form.reset({
-        ...transactionToEdit,
-        date: new Date(transactionToEdit.date),
-      });
-    } else {
-      form.reset({
-        type: 'expense',
-        amount: 0,
-        date: new Date(),
-        category: '',
-        fundSource: '',
-        description: '',
-        linkedTo: '',
-      });
-    }
-    setImagePreview(null);
-  }, [transactionToEdit, form, isOpen]);
-  
-  useEffect(() => {
-    if (isCameraOpen) {
-      const getCameraPermission = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-          setHasCameraPermission(true);
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-          }
-        } catch (error) {
-          console.error('Error accessing camera:', error);
-          setHasCameraPermission(false);
-          toast({
-            variant: 'destructive',
-            title: 'Akses Kamera Ditolak',
-            description: 'Mohon izinkan akses kamera di pengaturan browser Anda.',
-          });
-        }
-      };
-      getCameraPermission();
-    } else {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-        videoRef.current.srcObject = null;
-      }
-    }
-  }, [isCameraOpen, toast]);
-
-
-  useEffect(() => {
-    if (selectedLink) {
-        if (selectedLink.startsWith('goal_')) {
-            form.setValue('category', 'Tabungan Tujuan');
-        } else if (selectedLink.startsWith('investment_') && transactionType === 'expense') {
-            form.setValue('category', 'Investasi');
-        } else if (selectedLink.startsWith('investment_') && transactionType === 'income') {
-            form.setValue('category', 'Divestasi');
-        } else if (selectedLink.startsWith('debt_')) {
-            form.setValue('category', 'Pembayaran Utang');
-        } else if (selectedLink.startsWith('receivable_')) {
-            form.setValue('category', 'Penerimaan Piutang');
-        }
-    }
-  }, [selectedLink, transactionType, form]);
-
-  const processImage = async (photoDataUri: string) => {
-    setIsProcessing(true);
-    setImagePreview(photoDataUri);
-
-    try {
-      const allCategories = await db.categories.toArray();
-      const allFundSources = await db.fundSources.toArray();
-      const incomeCategories = allCategories.filter(c => c.type === 'income').map(c => c.name);
-      const expenseCategories = allCategories.filter(c => c.type === 'expense').map(c => c.name);
-      const fundSourceNames = allFundSources.map(fs => fs.name);
-
-      const result = await extractTransactionFromImage({
-        photoDataUri,
-        incomeCategories: incomeCategories.join(','),
-        expenseCategories: expenseCategories.join(','),
-        fundSources: fundSourceNames.join(','),
-      });
-
-      let transactionDate = new Date(result.date);
-      if (isNaN(transactionDate.getTime())) {
-        toast({
-          variant: 'destructive',
-          title: 'Tanggal Tidak Valid',
-          description: 'AI tidak dapat mendeteksi tanggal yang valid. Menggunakan tanggal hari ini.',
+    useEffect(() => {
+        if (transactionToEdit) {
+        form.reset({
+            ...transactionToEdit,
+            date: new Date(transactionToEdit.date),
         });
-        transactionDate = new Date();
-      }
-      
-      form.reset({
-        ...result,
-        type: result.isIncome ? 'income' : 'expense',
-        date: transactionDate,
-        fundSource: result.source || form.getValues('fundSource')
-      });
-      toast({
-        title: "Sukses!",
-        description: "Detail transaksi berhasil diekstrak dari gambar.",
-      });
+        } else {
+        form.reset({
+            type: 'expense',
+            amount: 0,
+            date: new Date(),
+            category: '',
+            fundSource: '',
+            description: '',
+            linkedTo: '',
+        });
+        }
+        setImagePreview(null);
+    }, [transactionToEdit, form]);
+    
+    useEffect(() => {
+        if (isCameraOpen) {
+        const getCameraPermission = async () => {
+            try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            setHasCameraPermission(true);
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+            } catch (error) {
+            console.error('Error accessing camera:', error);
+            setHasCameraPermission(false);
+            toast({
+                variant: 'destructive',
+                title: 'Akses Kamera Ditolak',
+                description: 'Mohon izinkan akses kamera di pengaturan browser Anda.',
+            });
+            }
+        };
+        getCameraPermission();
+        } else {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+        }
+    }, [isCameraOpen, toast]);
 
-    } catch (error) {
-      console.error('AI Error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Ekstraksi Gagal',
-        description: 'Tidak dapat mengekstrak detail dari gambar. Silakan masukkan secara manual.',
-      });
-    } finally {
-      setIsProcessing(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-  
-  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => processImage(reader.result as string);
-    reader.onerror = () => {
-      toast({
-        variant: 'destructive',
-        title: 'Gagal Membaca File',
-        description: 'Tidak dapat membaca file gambar.',
-      });
+    useEffect(() => {
+        if (selectedLink) {
+            if (selectedLink.startsWith('goal_')) {
+                form.setValue('category', 'Tabungan Tujuan');
+            } else if (selectedLink.startsWith('investment_') && transactionType === 'expense') {
+                form.setValue('category', 'Investasi');
+            } else if (selectedLink.startsWith('investment_') && transactionType === 'income') {
+                form.setValue('category', 'Divestasi');
+            } else if (selectedLink.startsWith('debt_')) {
+                form.setValue('category', 'Pembayaran Utang');
+            } else if (selectedLink.startsWith('receivable_')) {
+                form.setValue('category', 'Penerimaan Piutang');
+            }
+        }
+    }, [selectedLink, transactionType, form]);
+
+    const processImage = async (photoDataUri: string) => {
+        setIsProcessing(true);
+        setImagePreview(photoDataUri);
+
+        try {
+        const allCategories = await db.categories.toArray();
+        const allFundSources = await db.fundSources.toArray();
+        const incomeCategories = allCategories.filter(c => c.type === 'income').map(c => c.name);
+        const expenseCategories = allCategories.filter(c => c.type === 'expense').map(c => c.name);
+        const fundSourceNames = allFundSources.map(fs => fs.name);
+
+        const result = await extractTransactionFromImage({
+            photoDataUri,
+            incomeCategories: incomeCategories.join(','),
+            expenseCategories: expenseCategories.join(','),
+            fundSources: fundSourceNames.join(','),
+        });
+
+        let transactionDate = new Date(result.date);
+        if (isNaN(transactionDate.getTime())) {
+            toast({
+            variant: 'destructive',
+            title: 'Tanggal Tidak Valid',
+            description: 'AI tidak dapat mendeteksi tanggal yang valid. Menggunakan tanggal hari ini.',
+            });
+            transactionDate = new Date();
+        }
+        
+        form.reset({
+            ...result,
+            type: result.isIncome ? 'income' : 'expense',
+            date: transactionDate,
+            fundSource: result.source || form.getValues('fundSource')
+        });
+        toast({
+            title: "Sukses!",
+            description: "Detail transaksi berhasil diekstrak dari gambar.",
+        });
+
+        } catch (error) {
+        console.error('AI Error:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Ekstraksi Gagal',
+            description: 'Tidak dapat mengekstrak detail dari gambar. Silakan masukkan secara manual.',
+        });
+        } finally {
+        setIsProcessing(false);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+        }
     };
-  };
-  
-  const handleCapture = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const context = canvas.getContext('2d');
-    if (context) {
-      context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-      const photoDataUri = canvas.toDataURL('image/jpeg');
-      setIsCameraOpen(false);
-      processImage(photoDataUri);
-    }
-  };
+    
+    const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (transactionToEdit && transactionToEdit.id !== undefined) {
-      onUpdateTransaction(transactionToEdit.id, values);
-    } else {
-      await onAddTransaction(values);
-    }
-  };
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => processImage(reader.result as string);
+        reader.onerror = () => {
+        toast({
+            variant: 'destructive',
+            title: 'Gagal Membaca File',
+            description: 'Tidak dapat membaca file gambar.',
+        });
+        };
+    };
+    
+    const handleCapture = () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        if (context) {
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        const photoDataUri = canvas.toDataURL('image/jpeg');
+        setIsCameraOpen(false);
+        processImage(photoDataUri);
+        }
+    };
 
-  const handleQuickAddGoal = async (values: z.infer<typeof quickGoalSchema>) => {
-    try {
-      const newGoal = {
-        ...values,
-        currentAmount: 0,
-        // Set a default far-future date for the target
-        targetDate: new Date('2099-12-31').toISOString(),
-      };
-      const newId = await db.goals.add(newGoal);
-      await fetchMasterData(); // Refresh goal list
-      form.setValue('linkedTo', `goal_${newId}`);
-      toast({ title: 'Sukses', description: 'Tujuan baru berhasil ditambahkan.' });
-      setIsQuickGoalOpen(false);
-      quickGoalForm.reset();
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal menambahkan tujuan.' });
-    }
-  }
+    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+        if (transactionToEdit && transactionToEdit.id !== undefined) {
+            onUpdateTransaction(transactionToEdit.id, values);
+        } else {
+            await onAddTransaction(values);
+        }
+        onClose();
+    };
 
-  return (
-    <>
-    <UIDialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}</DialogTitle>
-        </DialogHeader>
+    const handleQuickAddGoal = async (values: z.infer<typeof quickGoalSchema>) => {
+        try {
+        const newGoal = {
+            ...values,
+            currentAmount: 0,
+            targetDate: new Date('2099-12-31').toISOString(),
+        };
+        const newId = await db.goals.add(newGoal);
+        await fetchMasterData(); // Refresh goal list
+        form.setValue('linkedTo', `goal_${newId}`);
+        toast({ title: 'Sukses', description: 'Tujuan baru berhasil ditambahkan.' });
+        setIsQuickGoalOpen(false);
+        quickGoalForm.reset();
+        } catch (error) {
+        toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal menambahkan tujuan.' });
+        }
+    }
+
+    return (
+        <>
+        <SheetHeader>
+            <SheetTitle>{transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}</SheetTitle>
+        </SheetHeader>
         {isProcessing && (
             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -406,7 +404,7 @@ export default function TransactionForm({
                 <div className="mt-4">
                     <p className="text-sm font-medium mb-2 text-center">Pratinjau Gambar:</p>
                     <div className="relative w-full h-48 rounded-md overflow-hidden border">
-                        <Image src={imagePreview} alt="Pratinjau Struk" fill objectFit="contain" />
+                        <Image src={imagePreview} alt="Pratinjau Struk" fill style={{ objectFit: 'contain' }} />
                     </div>
                 </div>
             )}
@@ -632,59 +630,82 @@ export default function TransactionForm({
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isProcessing}>
-              {transactionToEdit ? 'Simpan Perubahan' : 'Tambah Transaksi'}
-            </Button>
+            <SheetFooter>
+                <Button type="submit" className="w-full" disabled={isProcessing}>
+                    {transactionToEdit ? 'Simpan Perubahan' : 'Tambah Transaksi'}
+                </Button>
+            </SheetFooter>
           </form>
         </Form>
-      </DialogContent>
-    </UIDialog>
-    
-    <UIDialog open={isQuickGoalOpen} onOpenChange={setIsQuickGoalOpen}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Buat Tujuan Baru</DialogTitle>
-            </DialogHeader>
-            <Form {...quickGoalForm}>
-                <form onSubmit={quickGoalForm.handleSubmit(handleQuickAddGoal)} className="space-y-4">
-                    <FormField
-                        control={quickGoalForm.control}
-                        name="name"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Nama Tujuan</FormLabel>
-                            <FormControl>
-                            <Input placeholder="cth: Dana Darurat" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={quickGoalForm.control}
-                        name="targetAmount"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Jumlah Target</FormLabel>
-                            <FormControl>
-                            <Input
-                                placeholder="Rp 10.000.000"
-                                value={formatToRupiah(field.value || 0)}
-                                onChange={e => field.onChange(parseFromRupiah(e.target.value))}
-                            />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <DialogFooter>
-                        <Button type="button" variant="ghost" onClick={() => setIsQuickGoalOpen(false)}>Batal</Button>
-                        <Button type="submit">Simpan Tujuan</Button>
-                    </DialogFooter>
-                </form>
-            </Form>
-        </DialogContent>
-    </UIDialog>
-    </>
+        <UIDialog open={isQuickGoalOpen} onOpenChange={setIsQuickGoalOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Buat Tujuan Baru</DialogTitle>
+                </DialogHeader>
+                <Form {...quickGoalForm}>
+                    <form onSubmit={quickGoalForm.handleSubmit(handleQuickAddGoal)} className="space-y-4">
+                        <FormField
+                            control={quickGoalForm.control}
+                            name="name"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Nama Tujuan</FormLabel>
+                                <FormControl>
+                                <Input placeholder="cth: Dana Darurat" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={quickGoalForm.control}
+                            name="targetAmount"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Jumlah Target</FormLabel>
+                                <FormControl>
+                                <Input
+                                    placeholder="Rp 10.000.000"
+                                    value={formatToRupiah(field.value || 0)}
+                                    onChange={e => field.onChange(parseFromRupiah(e.target.value))}
+                                />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={() => setIsQuickGoalOpen(false)}>Batal</Button>
+                            <Button type="submit">Simpan Tujuan</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </UIDialog>
+        </>
+    );
+}
+
+
+export default function TransactionForm(props: TransactionFormProps) {
+  const { isOpen, onClose } = props;
+
+  // For larger screens, use a static form.
+  if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+    if (!isOpen) return null; // Don't render anything if not open
+    return (
+      <div className="p-6 border rounded-lg bg-card shadow-sm mb-8">
+        <TransactionFormContent {...props} />
+      </div>
+    );
+  }
+
+  // For smaller screens, use a sheet.
+  return (
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
+        <TransactionFormContent {...props} />
+      </SheetContent>
+    </Sheet>
   );
 }
