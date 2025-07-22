@@ -725,7 +725,9 @@ export default function TransactionForm(props: TransactionFormProps) {
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
         <div className="py-4">
-            <TransactionFormContent {...props} isSheet={true} />
+             <SheetHeader className="text-left mb-4">
+                <TransactionFormContent {...props} isSheet={true} />
+            </SheetHeader>
         </div>
       </SheetContent>
     </Sheet>
