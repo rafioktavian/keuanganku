@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Edit, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
+import { Trash2, Edit, TrendingUp, TrendingDown, Calendar, Landmark, Coins, BrainCircuit, Wallet } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +22,7 @@ interface InvestmentCardProps {
   investment: Investment;
   onUpdate: (id: number, newCurrentValue: number) => void;
   onDelete: (id: number) => void;
+  onLiquidate: (investment: Investment) => void;
   Icon: React.ElementType;
 }
 
@@ -36,12 +37,12 @@ const formatCurrency = (amount: number) => {
 const parseFromRupiah = (value: string) => Number(value.replace(/[^0-9]/g, ''));
 
 
-export default function InvestmentCard({ investment, onUpdate, onDelete, Icon }: InvestmentCardProps) {
+export default function InvestmentCard({ investment, onUpdate, onDelete, onLiquidate, Icon }: InvestmentCardProps) {
   const [newValue, setNewValue] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   
   const profitLoss = investment.currentValue - investment.initialAmount;
-  const profitLossPercentage = (profitLoss / investment.initialAmount) * 100;
+  const profitLossPercentage = (investment.initialAmount !== 0) ? (profitLoss / investment.initialAmount) * 100 : 0;
 
   const handleUpdate = () => {
     if (investment.id !== undefined && newValue) {
@@ -72,7 +73,7 @@ export default function InvestmentCard({ investment, onUpdate, onDelete, Icon }:
                 <AlertDialogHeader>
                   <AlertDialogTitle>Anda yakin?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Tindakan ini akan menghapus data investasi Anda secara permanen.
+                    Tindakan ini akan menghapus data investasi Anda secara permanen. Transaksi terkait tidak akan terhapus.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -134,16 +135,39 @@ export default function InvestmentCard({ investment, onUpdate, onDelete, Icon }:
             <Input
               placeholder="Masukkan nilai terbaru"
               value={newValue}
-              onChange={(e) => setNewValue(e.target.value)}
+              onChange={(e) => setNewValue(formatCurrency(parseFromRupiah(e.target.value)))}
               onBlur={handleUpdate}
             />
              <Button onClick={handleUpdate} className="w-full">Simpan</Button>
           </div>
         ) : (
-          <Button onClick={() => setIsEditing(true)} variant="secondary">
-            <Edit className="mr-2" /> Perbarui Nilai
+          <Button onClick={() => setIsEditing(true)} variant="secondary" size="sm">
+            <Edit className="mr-2 h-4 w-4" /> Perbarui Nilai
           </Button>
         )}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm" className="w-full">
+              <Wallet className="mr-2 h-4 w-4 text-primary" /> Cairkan Investasi
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cairkan Hasil Investasi?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tindakan ini akan membuat transaksi pemasukan sebesar 
+                <span className="font-bold"> {formatCurrency(investment.currentValue)} </span>
+                 dan menghapus aset investasi ini. Keuntungan atau kerugian akan tercermin di Laporan Arus Kas. Anda yakin?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Batal</AlertDialogCancel>
+              <AlertDialogAction onClick={() => onLiquidate(investment)}>
+                Ya, Cairkan
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardFooter>
     </Card>
   );

@@ -37,7 +37,10 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
-import type { Investment } from '@/lib/types';
+import type { Investment, FundSource } from '@/lib/types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
+
 
 const formSchema = z.object({
   name: z.string().min(1, 'Nama investasi harus diisi.'),
@@ -47,10 +50,12 @@ const formSchema = z.object({
     .positive({ message: 'Jumlah investasi harus lebih dari 0.' }),
   currentValue: z.coerce.number().min(0, 'Nilai saat ini tidak boleh negatif.'),
   purchaseDate: z.date({ required_error: 'Tanggal pembelian harus diisi.' }),
+  fundSourceId: z.coerce.number({required_error: 'Sumber dana harus dipilih.'}).positive(),
 });
 
 interface AddInvestmentFormProps {
-  onAddInvestment: (investment: Omit<Investment, 'id'>) => void;
+  onAddInvestment: (investment: Omit<Investment, 'id'>, fundSource: FundSource | undefined) => void;
+  fundSources: FundSource[];
 }
 
 const formatToRupiah = (value: number | string) => {
@@ -63,7 +68,7 @@ const formatToRupiah = (value: number | string) => {
 
 const parseFromRupiah = (value: string) => Number(value.replace(/[^0-9]/g, ''));
 
-export default function AddInvestmentForm({ onAddInvestment }: AddInvestmentFormProps) {
+export default function AddInvestmentForm({ onAddInvestment, fundSources }: AddInvestmentFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -76,7 +81,9 @@ export default function AddInvestmentForm({ onAddInvestment }: AddInvestmentForm
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    onAddInvestment(values);
+    const { fundSourceId, ...investmentData } = values;
+    const selectedFundSource = fundSources.find(fs => fs.id === fundSourceId);
+    onAddInvestment(investmentData, selectedFundSource);
     form.reset();
   };
 
@@ -87,7 +94,7 @@ export default function AddInvestmentForm({ onAddInvestment }: AddInvestmentForm
       <DialogHeader>
         <DialogTitle>Aset Investasi Baru</DialogTitle>
         <DialogDescription>
-          Catat aset investasimu untuk mulai melacaknya.
+          Catat aset investasimu. Transaksi pengeluaran akan dibuat secara otomatis.
         </DialogDescription>
       </DialogHeader>
       <Form {...form}>
@@ -137,7 +144,14 @@ export default function AddInvestmentForm({ onAddInvestment }: AddInvestmentForm
                   <Input
                     placeholder="Rp 1.000.000"
                     value={formatToRupiah(field.value || 0)}
-                    onChange={e => field.onChange(parseFromRupiah(e.target.value))}
+                    onChange={e => {
+                        const amount = parseFromRupiah(e.target.value)
+                        field.onChange(amount);
+                        // Automatically set current value to initial amount
+                        if (!form.getValues('currentValue') || form.getValues('currentValue') < amount) {
+                           form.setValue('currentValue', amount);
+                        }
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -161,6 +175,28 @@ export default function AddInvestmentForm({ onAddInvestment }: AddInvestmentForm
               </FormItem>
             )}
           />
+           <FormField
+            control={form.control}
+            name="fundSourceId"
+            render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sumber Dana</FormLabel>
+                  <Select onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih Sumber Dana untuk modal" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {fundSources.map((fs) => (
+                        <SelectItem key={fs.id} value={String(fs.id)}>{fs.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+            )}
+            />
           <FormField
             control={form.control}
             name="purchaseDate"
@@ -201,6 +237,13 @@ export default function AddInvestmentForm({ onAddInvestment }: AddInvestmentForm
               </FormItem>
             )}
           />
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Info</AlertTitle>
+            <AlertDescription>
+              Transaksi pengeluaran sebesar Modal Awal akan dibuat secara otomatis.
+            </AlertDescription>
+          </Alert>
           <DialogFooter>
             <Button type="submit">Simpan Aset</Button>
           </DialogFooter>
