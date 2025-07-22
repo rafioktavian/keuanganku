@@ -47,7 +47,7 @@ export default function CashFlowReport() {
     });
 
     const cashFlowData: CashFlowData[] = Object.keys(monthlyData).map(key => ({
-      month: format(new Date(`${key}-01`), 'MMM yyyy', { locale: localeID }),
+      month: format(new Date(`${key}-01T00:00:00`), 'MMM yyyy', { locale: localeID }),
       Pemasukan: monthlyData[key].income,
       Pengeluaran: monthlyData[key].expense,
     })).sort((a,b) => new Date(a.month).getTime() - new Date(b.month).getTime());
@@ -97,30 +97,55 @@ export default function CashFlowReport() {
           </CardContent>
         </Card>
       </div>
+      
+      <div className="grid gap-8 lg:grid-cols-2">
+         <Card>
+            <CardHeader>
+            <CardTitle>Grafik Pemasukan Bulanan</CardTitle>
+            <CardDescription>Visualisasi pemasukan Anda setiap bulan.</CardDescription>
+            </CardHeader>
+            <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={cashFlowData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis tickFormatter={(value) => new Intl.NumberFormat('id-ID', { notation: 'compact' }).format(value as number)} />
+                <Tooltip
+                    formatter={(value) => formatCurrency(value as number)}
+                    labelStyle={{ fontWeight: 'bold' }}
+                    cursor={{ fill: 'hsl(var(--muted))' }}
+                />
+                <Legend />
+                <Bar dataKey="Pemasukan" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+            </ResponsiveContainer>
+            </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Perbandingan Arus Kas Bulanan</CardTitle>
-          <CardDescription>Visualisasi pemasukan dan pengeluaran Anda setiap bulan.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={cashFlowData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis tickFormatter={(value) => new Intl.NumberFormat('id-ID', { notation: 'compact' }).format(value as number)} />
-              <Tooltip
-                formatter={(value) => formatCurrency(value as number)}
-                labelStyle={{ fontWeight: 'bold' }}
-                cursor={{ fill: 'hsl(var(--muted))' }}
-              />
-              <Legend />
-              <Bar dataKey="Pemasukan" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Pengeluaran" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]}/>
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+         <Card>
+            <CardHeader>
+            <CardTitle>Grafik Pengeluaran Bulanan</CardTitle>
+            <CardDescription>Visualisasi pengeluaran Anda setiap bulan.</CardDescription>
+            </CardHeader>
+            <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={cashFlowData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis tickFormatter={(value) => new Intl.NumberFormat('id-ID', { notation: 'compact' }).format(value as number)} />
+                <Tooltip
+                    formatter={(value) => formatCurrency(value as number)}
+                    labelStyle={{ fontWeight: 'bold' }}
+                    cursor={{ fill: 'hsl(var(--muted))' }}
+                />
+                <Legend />
+                <Bar dataKey="Pengeluaran" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]}/>
+                </BarChart>
+            </ResponsiveContainer>
+            </CardContent>
+        </Card>
+      </div>
+
     </div>
   );
 }
