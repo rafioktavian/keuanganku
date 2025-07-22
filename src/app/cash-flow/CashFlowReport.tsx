@@ -31,6 +31,7 @@ export default function CashFlowReport() {
     const monthlyData: { [key: string]: { income: number, expense: number } } = {};
 
     transactions.forEach(t => {
+      // Dexie returns date as string, so we need to convert it
       const date = new Date(t.date);
       const monthKey = format(startOfMonth(date), 'yyyy-MM');
       
@@ -46,13 +47,13 @@ export default function CashFlowReport() {
     });
 
     const cashFlowData: CashFlowData[] = Object.keys(monthlyData).map(key => ({
-      month: format(new Date(key), 'MMM yyyy', { locale: localeID }),
-      income: monthlyData[key].income,
-      expense: monthlyData[key].expense,
+      month: format(new Date(`${key}-01`), 'MMM yyyy', { locale: localeID }),
+      Pemasukan: monthlyData[key].income,
+      Pengeluaran: monthlyData[key].expense,
     })).sort((a,b) => new Date(a.month).getTime() - new Date(b.month).getTime());
 
-    const totalIncome = cashFlowData.reduce((acc, curr) => acc + curr.income, 0);
-    const totalExpense = cashFlowData.reduce((acc, curr) => acc + curr.expense, 0);
+    const totalIncome = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
+    const totalExpense = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
     const netFlow = totalIncome - totalExpense;
 
     return { cashFlowData, summary: { totalIncome, totalExpense, netFlow } };
@@ -109,14 +110,13 @@ export default function CashFlowReport() {
               <XAxis dataKey="month" />
               <YAxis tickFormatter={(value) => new Intl.NumberFormat('id-ID', { notation: 'compact' }).format(value as number)} />
               <Tooltip
-                formatter={(value, name) => [formatCurrency(value as number), name === 'income' ? 'Pemasukan' : 'Pengeluaran']}
+                formatter={(value) => formatCurrency(value as number)}
                 labelStyle={{ fontWeight: 'bold' }}
+                cursor={{ fill: 'hsl(var(--muted))' }}
               />
-              <Legend
-                formatter={(value) => value === 'income' ? 'Pemasukan' : 'Pengeluaran'}
-              />
-              <Bar dataKey="income" fill="hsl(var(--chart-2))" name="Pemasukan" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="expense" fill="hsl(var(--chart-5))" name="Pengeluaran" radius={[4, 4, 0, 0]}/>
+              <Legend />
+              <Bar dataKey="Pemasukan" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Pengeluaran" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]}/>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

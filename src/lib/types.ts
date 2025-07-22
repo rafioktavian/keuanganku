@@ -81,8 +81,8 @@ export interface DebtDB extends Omit<Debt, 'dueDate'> {
 
 export interface CashFlowData {
     month: string;
-    income: number;
-    expense: number;
+    Pemasukan: number;
+    Pengeluaran: number;
 }
 
 
