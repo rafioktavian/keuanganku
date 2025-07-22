@@ -334,6 +334,9 @@ function TransactionFormContent({
                 <p className="mt-4 text-lg text-foreground">Menganalisis struk Anda...</p>
             </div>
         )}
+        <SheetHeader className="mb-4">
+             <SheetTitle>{transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}</SheetTitle>
+        </SheetHeader>
         <div className="mb-6 space-y-4">
              <input
                 type="file"
@@ -685,16 +688,13 @@ function TransactionFormContent({
 
 
 export default function TransactionForm(props: TransactionFormProps) {
-  const { isOpen, onClose, transactionToEdit } = props;
+  const { isOpen, onClose } = props;
 
   // For larger screens, use a static form.
   if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
     if (!isOpen) return null; // Don't render anything if not open
     return (
         <div className="p-6 border rounded-lg bg-card shadow-sm mb-8 relative">
-             <SheetHeader>
-                <SheetTitle>{transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}</SheetTitle>
-             </SheetHeader>
             <TransactionFormContent {...props} />
         </div>
     );
@@ -704,9 +704,6 @@ export default function TransactionForm(props: TransactionFormProps) {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
-        <SheetHeader>
-            <SheetTitle>{transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}</SheetTitle>
-        </SheetHeader>
         <div className="py-4">
             <TransactionFormContent {...props} />
         </div>
