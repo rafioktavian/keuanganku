@@ -31,7 +31,6 @@ export default function CashFlowReport() {
     const monthlyData: { [key: string]: { income: number, expense: number } } = {};
 
     transactions.forEach(t => {
-      // Dexie returns date as string, so we need to convert it
       const date = new Date(t.date);
       const monthKey = format(startOfMonth(date), 'yyyy-MM');
       
@@ -92,7 +91,7 @@ export default function CashFlowReport() {
             <Scale className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${summary.netFlow >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatCurrency(summary.netFlow)}</div>
+            <div className={`text-2xl font-bold ${summary.netFlow >= 0 ? 'text-green-500' : 'text-red-500'}`}>{formatCurrency(summary.netFlow)}</div>
             <p className="text-xs text-muted-foreground">Selisih pemasukan dan pengeluaran</p>
           </CardContent>
         </Card>
@@ -127,7 +126,7 @@ export default function CashFlowReport() {
                 cursor={{ fill: 'hsl(var(--muted))' }}
               />
               <Legend />
-              <Bar dataKey="Pemasukan" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Pemasukan" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
               <Bar dataKey="Pengeluaran" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
