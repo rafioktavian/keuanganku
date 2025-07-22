@@ -127,8 +127,8 @@ export default function CashFlowReport() {
                 cursor={{ fill: 'hsl(var(--muted))' }}
               />
               <Legend />
-              <Bar dataKey="Pemasukan" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Pengeluaran" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Pemasukan" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Pengeluaran" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
