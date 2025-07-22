@@ -334,318 +334,320 @@ function TransactionFormContent({
     const TitleComponent = isSheet ? SheetTitle : 'h2' as React.ElementType;
 
     return (
-        <>
+        <div className="relative">
         {isProcessing && (
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm">
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm rounded-lg">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 <p className="mt-4 text-lg text-foreground">Menganalisis struk Anda...</p>
             </div>
         )}
         
-        <TitleComponent className={cn(!isSheet && "text-lg font-semibold text-foreground mb-4")}>
-            {transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}
-        </TitleComponent>
+        <div className={cn(isProcessing && "opacity-20 pointer-events-none")}>
+            <TitleComponent className={cn(!isSheet && "text-lg font-semibold text-foreground mb-4")}>
+                {transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}
+            </TitleComponent>
 
-        <div className="mb-6 space-y-4">
-             <input
-                type="file"
-                accept="image/*"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                className="hidden"
-                id="receipt-upload"
-            />
-            <div className="grid grid-cols-2 gap-4">
-                <label htmlFor="receipt-upload" className="block">
-                    <div className="border-2 border-dashed hover:border-primary transition-colors cursor-pointer p-4 h-full rounded-lg">
-                        <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground h-full">
-                            <Upload className="h-8 w-8" />
-                            <p className="text-center font-semibold text-sm">
-                                <span className="text-primary">Unggah Struk</span>
-                            </p>
-                            <p className="text-xs text-center">Pilih dari galeri</p>
-                        </div>
-                    </div>
-                </label>
-
-                <UIDialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
-                    <DialogTrigger asChild>
-                         <div className="border-2 border-dashed hover:border-primary transition-colors cursor-pointer p-4 h-full rounded-lg">
+            <div className="mb-6 space-y-4">
+                 <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="receipt-upload"
+                />
+                <div className="grid grid-cols-2 gap-4">
+                    <label htmlFor="receipt-upload" className="block">
+                        <div className="border-2 border-dashed hover:border-primary transition-colors cursor-pointer p-4 h-full rounded-lg">
                             <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground h-full">
-                                <Camera className="h-8 w-8" />
+                                <Upload className="h-8 w-8" />
                                 <p className="text-center font-semibold text-sm">
-                                    <span className="text-primary">Gunakan Kamera</span>
+                                    <span className="text-primary">Unggah Struk</span>
                                 </p>
-                                <p className="text-xs text-center">Ambil foto langsung</p>
+                                <p className="text-xs text-center">Pilih dari galeri</p>
                             </div>
                         </div>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md">
-                        <DialogHeader>
-                        <DialogTitle>Ambil Foto Struk</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                        <div className="relative w-full aspect-video rounded-md bg-muted overflow-hidden">
-                            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                            <canvas ref={canvasRef} className="hidden" />
-                        </div>
-                        {hasCameraPermission === false && (
-                            <Alert variant="destructive">
-                            <CameraOff className="h-4 w-4" />
-                            <AlertTitle>Akses Kamera Ditolak</AlertTitle>
-                            <AlertDescription>
-                                Anda perlu memberikan izin kamera di pengaturan browser untuk menggunakan fitur ini.
-                            </AlertDescription>
-                            </Alert>
-                        )}
-                        </div>
-                        <DialogFooter>
-                        <Button onClick={handleCapture} disabled={hasCameraPermission !== true}>
-                            <Camera className="mr-2 h-4 w-4"/>
-                            Ambil Gambar
-                        </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </UIDialog>
-            </div>
-            
-            {imagePreview && (
-                <div className="mt-4">
-                    <p className="text-sm font-medium mb-2 text-center">Pratinjau Gambar:</p>
-                    <div className="relative w-full h-48 rounded-md overflow-hidden border">
-                        <Image src={imagePreview} alt="Pratinjau Struk" fill style={{ objectFit: 'contain' }} />
-                    </div>
+                    </label>
+
+                    <UIDialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
+                        <DialogTrigger asChild>
+                             <div className="border-2 border-dashed hover:border-primary transition-colors cursor-pointer p-4 h-full rounded-lg">
+                                <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground h-full">
+                                    <Camera className="h-8 w-8" />
+                                    <p className="text-center font-semibold text-sm">
+                                        <span className="text-primary">Gunakan Kamera</span>
+                                    </p>
+                                    <p className="text-xs text-center">Ambil foto langsung</p>
+                                </div>
+                            </div>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                            <DialogHeader>
+                            <DialogTitle>Ambil Foto Struk</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                            <div className="relative w-full aspect-video rounded-md bg-muted overflow-hidden">
+                                <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                                <canvas ref={canvasRef} className="hidden" />
+                            </div>
+                            {hasCameraPermission === false && (
+                                <Alert variant="destructive">
+                                <CameraOff className="h-4 w-4" />
+                                <AlertTitle>Akses Kamera Ditolak</AlertTitle>
+                                <AlertDescription>
+                                    Anda perlu memberikan izin kamera di pengaturan browser untuk menggunakan fitur ini.
+                                </AlertDescription>
+                                </Alert>
+                            )}
+                            </div>
+                            <DialogFooter>
+                            <Button onClick={handleCapture} disabled={hasCameraPermission !== true}>
+                                <Camera className="mr-2 h-4 w-4"/>
+                                Ambil Gambar
+                            </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </UIDialog>
                 </div>
-            )}
-        </div>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Tipe Transaksi</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        form.setValue('linkedTo', ''); // Reset link on type change
-                      }}
-                      value={field.value}
-                      className="flex space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="income" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Pemasukan</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="expense" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Pengeluaran</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Jumlah</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="text"
-                      placeholder="Rp 0"
-                      value={formatToRupiah(field.value || 0)}
-                      onChange={(e) => {
-                        const numericValue = parseFromRupiah(e.target.value);
-                        field.onChange(numericValue);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Tanggal</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={'outline'}
-                          className={cn(
-                            'w-full pl-3 text-left font-normal',
-                            !field.value && 'text-muted-foreground'
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, 'PPP', { locale: localeID })
-                          ) : (
-                            <span>Pilih tanggal</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        locale={localeID}
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) => date > new Date() || date < new Date('2000-01-01')}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="linkedTo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <Link2 className="h-4 w-4" />
-                    Alokasikan ke (Opsional)
-                  </FormLabel>
-                  <Select 
-                    onValueChange={(value) => {
-                        if (value === 'add_new_goal') {
-                            setIsQuickGoalOpen(true);
-                        } else {
-                            field.onChange(value);
-                        }
-                    }} 
-                    value={field.value}
-                    disabled={!!transactionToEdit} // Disable if editing
-                    >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih alokasi dana..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        {transactionType === 'expense' ? (
-                            <>
-                                <SelectItem value="add_new_goal" className="font-semibold text-primary">
-                                    <div className="flex items-center gap-2">
-                                        <PlusCircle className="h-4 w-4"/> Buat Tujuan Baru...
-                                    </div>
-                                </SelectItem>
-
-                                {goals.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Tujuan Keuangan</FormLabel>}
-                                {goals.map(g => <SelectItem key={`goal_${g.id}`} value={`goal_${g.id}`}>Menabung: {g.name}</SelectItem>)}
-                                
-                                {investments.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Investasi</FormLabel>}
-                                {investments.map(i => <SelectItem key={`investment_${i.id}`} value={`investment_${i.id}`}>Investasi: {i.name}</SelectItem>)}
-                                
-                                {debts.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Utang</FormLabel>}
-                                {debts.map(d => <SelectItem key={`debt_${d.id}`} value={`debt_${d.id}`}>Bayar utang: {d.personName}</SelectItem>)}
-                            </>
-                        ) : ( // income
-                            <>
-                                {investments.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Investasi</FormLabel>}
-                                {investments.map(i => <SelectItem key={`investment_${i.id}`} value={`investment_${i.id}`}>Divestasi: {i.name}</SelectItem>)}
-
-                                {receivables.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Piutang</FormLabel>}
-                                {receivables.map(r => <SelectItem key={`receivable_${r.id}`} value={`receivable_${r.id}`}>Terima dari: {r.personName}</SelectItem>)}
-                            </>
-                        )}
-                        {(transactionType === 'expense' && goals.length === 0 && investments.length === 0 && debts.length === 0) || (transactionType === 'income' && receivables.length === 0 && investments.length === 0) ? (
-                            <p className="p-2 text-sm text-muted-foreground">Tidak ada item yang bisa ditautkan.</p>
-                        ) : null}
-                    </SelectContent>
-                  </Select>
-                  {!!transactionToEdit && <p className="text-xs text-muted-foreground">Tautan tidak bisa diubah saat mengedit.</p>}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Kategori</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={!!form.watch('linkedTo')}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih Kategori" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="fundSource"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Sumber Dana</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih Sumber Dana" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {fundSources.map((fs) => (
-                        <SelectItem key={fs.id} value={fs.name}>{fs.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Deskripsi</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="cth: Makan siang bersama kolega"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <div className="pt-4">
-                 <Button type="submit" className="w-full" disabled={isProcessing}>
-                    {transactionToEdit ? 'Simpan Perubahan' : 'Tambah Transaksi'}
-                </Button>
+                
+                {imagePreview && (
+                    <div className="mt-4">
+                        <p className="text-sm font-medium mb-2 text-center">Pratinjau Gambar:</p>
+                        <div className="relative w-full h-48 rounded-md overflow-hidden border">
+                            <Image src={imagePreview} alt="Pratinjau Struk" fill style={{ objectFit: 'contain' }} />
+                        </div>
+                    </div>
+                )}
             </div>
-          </form>
-        </Form>
+
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>Tipe Transaksi</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            form.setValue('linkedTo', ''); // Reset link on type change
+                          }}
+                          value={field.value}
+                          className="flex space-x-4"
+                        >
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="income" />
+                            </FormControl>
+                            <FormLabel className="font-normal">Pemasukan</FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="expense" />
+                            </FormControl>
+                            <FormLabel className="font-normal">Pengeluaran</FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Jumlah</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="text"
+                          placeholder="Rp 0"
+                          value={formatToRupiah(field.value || 0)}
+                          onChange={(e) => {
+                            const numericValue = parseFromRupiah(e.target.value);
+                            field.onChange(numericValue);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Tanggal</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={'outline'}
+                              className={cn(
+                                'w-full pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground'
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, 'PPP', { locale: localeID })
+                              ) : (
+                                <span>Pilih tanggal</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            locale={localeID}
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date > new Date() || date < new Date('2000-01-01')}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="linkedTo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Link2 className="h-4 w-4" />
+                        Alokasikan ke (Opsional)
+                      </FormLabel>
+                      <Select 
+                        onValueChange={(value) => {
+                            if (value === 'add_new_goal') {
+                                setIsQuickGoalOpen(true);
+                            } else {
+                                field.onChange(value);
+                            }
+                        }} 
+                        value={field.value}
+                        disabled={!!transactionToEdit} // Disable if editing
+                        >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih alokasi dana..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {transactionType === 'expense' ? (
+                                <>
+                                    <SelectItem value="add_new_goal" className="font-semibold text-primary">
+                                        <div className="flex items-center gap-2">
+                                            <PlusCircle className="h-4 w-4"/> Buat Tujuan Baru...
+                                        </div>
+                                    </SelectItem>
+
+                                    {goals.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Tujuan Keuangan</FormLabel>}
+                                    {goals.map(g => <SelectItem key={`goal_${g.id}`} value={`goal_${g.id}`}>Menabung: {g.name}</SelectItem>)}
+                                    
+                                    {investments.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Investasi</FormLabel>}
+                                    {investments.map(i => <SelectItem key={`investment_${i.id}`} value={`investment_${i.id}`}>Investasi: {i.name}</SelectItem>)}
+                                    
+                                    {debts.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Utang</FormLabel>}
+                                    {debts.map(d => <SelectItem key={`debt_${d.id}`} value={`debt_${d.id}`}>Bayar utang: {d.personName}</SelectItem>)}
+                                </>
+                            ) : ( // income
+                                <>
+                                    {investments.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Investasi</FormLabel>}
+                                    {investments.map(i => <SelectItem key={`investment_${i.id}`} value={`investment_${i.id}`}>Divestasi: {i.name}</SelectItem>)}
+
+                                    {receivables.length > 0 && <FormLabel className="px-2 py-1.5 text-xs font-semibold">Piutang</FormLabel>}
+                                    {receivables.map(r => <SelectItem key={`receivable_${r.id}`} value={`receivable_${r.id}`}>Terima dari: {r.personName}</SelectItem>)}
+                                </>
+                            )}
+                            {(transactionType === 'expense' && goals.length === 0 && investments.length === 0 && debts.length === 0) || (transactionType === 'income' && receivables.length === 0 && investments.length === 0) ? (
+                                <p className="p-2 text-sm text-muted-foreground">Tidak ada item yang bisa ditautkan.</p>
+                            ) : null}
+                        </SelectContent>
+                      </Select>
+                      {!!transactionToEdit && <p className="text-xs text-muted-foreground">Tautan tidak bisa diubah saat mengedit.</p>}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kategori</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={!!form.watch('linkedTo')}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih Kategori" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="fundSource"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sumber Dana</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih Sumber Dana" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {fundSources.map((fs) => (
+                            <SelectItem key={fs.id} value={fs.name}>{fs.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Deskripsi</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="cth: Makan siang bersama kolega"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <div className="pt-4">
+                     <Button type="submit" className="w-full" disabled={isProcessing}>
+                        {transactionToEdit ? 'Simpan Perubahan' : 'Tambah Transaksi'}
+                    </Button>
+                </div>
+              </form>
+            </Form>
+        </div>
         <UIDialog open={isQuickGoalOpen} onOpenChange={setIsQuickGoalOpen}>
             <DialogContent>
                 <DialogHeader>
@@ -691,7 +693,7 @@ function TransactionFormContent({
                 </Form>
             </DialogContent>
         </UIDialog>
-        </>
+        </div>
     );
 }
 
@@ -722,9 +724,6 @@ export default function TransactionForm(props: TransactionFormProps) {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
-        <SheetHeader>
-           {/* The title is now inside TransactionFormContent */}
-        </SheetHeader>
         <div className="py-4">
             <TransactionFormContent {...props} isSheet={true} />
         </div>
