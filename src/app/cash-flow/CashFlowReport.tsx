@@ -2,7 +2,7 @@
 
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import type { Transaction, CashFlowData } from '@/lib/types';
+import type { Transaction, CashFlowData, Investment } from '@/lib/types';
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -22,12 +22,18 @@ export default function CashFlowReport() {
     () => db.transactions.orderBy('date').toArray(),
     []
   );
+  
+  const investments = useLiveQuery(
+    () => db.investments.toArray(),
+    []
+  );
 
   const { cashFlowData, summary } = useMemo(() => {
-    if (!transactions) {
+    if (!transactions || !investments) {
       return { cashFlowData: [], summary: { totalIncome: 0, totalExpense: 0, netFlow: 0 } };
     }
 
+    const investmentsById = new Map(investments.map(inv => [inv.id, inv]));
     const monthlyData: { [key: string]: { income: number, expense: number } } = {};
 
     transactions.forEach(t => {
@@ -38,10 +44,42 @@ export default function CashFlowReport() {
         monthlyData[monthKey] = { income: 0, expense: 0 };
       }
 
-      if (t.type === 'income') {
-        monthlyData[monthKey].income += t.amount;
-      } else {
+      if (t.type === 'expense') {
+        // Exclude investment purchases from cash flow expenses
+        if (t.category === 'Investasi' && t.linkedTo) {
+            return; // Skip this transaction
+        }
         monthlyData[monthKey].expense += t.amount;
+      } else { // income
+        // Handle investment divestments (sales)
+        if (t.category === 'Divestasi' && t.linkedTo) {
+          const [type, linkedIdStr] = t.linkedTo.split('_');
+          const linkedId = parseInt(linkedIdStr, 10);
+          const investment = investmentsById.get(linkedId);
+
+          if (investment) {
+            // After a sale, the currentValue in DB is already reduced.
+            // We need to estimate what it was *before* the sale.
+            const valueBeforeSale = investment.currentValue + t.amount;
+            const proportionSold = t.amount / valueBeforeSale;
+            const costOfGoodsSold = investment.initialAmount * proportionSold;
+            const profitOrLoss = t.amount - costOfGoodsSold;
+
+            if (profitOrLoss > 0) {
+              // Only add profit to income
+              monthlyData[monthKey].income += profitOrLoss;
+            } else {
+              // Only add loss to expense
+              monthlyData[monthKey].expense += Math.abs(profitOrLoss);
+            }
+          } else {
+             // If investment data is not found, treat as regular income for safety
+            monthlyData[monthKey].income += t.amount;
+          }
+        } else {
+            // Regular income
+            monthlyData[monthKey].income += t.amount;
+        }
       }
     });
 
@@ -56,9 +94,9 @@ export default function CashFlowReport() {
     const netFlow = totalIncome - totalExpense;
 
     return { cashFlowData, summary: { totalIncome, totalExpense, netFlow } };
-  }, [transactions]);
+  }, [transactions, investments]);
   
-  if (transactions === undefined) {
+  if (transactions === undefined || investments === undefined) {
     return <Skeleton className="h-96 w-full" />;
   }
 
