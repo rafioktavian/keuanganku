@@ -87,7 +87,8 @@ function TransactionFormContent({
   onUpdateTransaction,
   onClose,
   transactionToEdit,
-}: Omit<TransactionFormProps, 'isOpen'>) {
+  isSheet = false, // New prop to determine context
+}: Omit<TransactionFormProps, 'isOpen'> & { isSheet?: boolean }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -325,6 +326,22 @@ function TransactionFormContent({
         toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal menambahkan tujuan.' });
         }
     }
+    
+    const FormHeader = () => {
+        const title = transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru';
+        if (isSheet) {
+            return (
+                <SheetHeader className="mb-4">
+                    <SheetTitle>{title}</SheetTitle>
+                </SheetHeader>
+            );
+        }
+        return (
+            <div className="mb-4">
+                <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+            </div>
+        );
+    };
 
     return (
         <>
@@ -334,9 +351,9 @@ function TransactionFormContent({
                 <p className="mt-4 text-lg text-foreground">Menganalisis struk Anda...</p>
             </div>
         )}
-        <SheetHeader className="mb-4">
-             <SheetTitle>{transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}</SheetTitle>
-        </SheetHeader>
+        
+        <FormHeader />
+        
         <div className="mb-6 space-y-4">
              <input
                 type="file"
@@ -630,11 +647,11 @@ function TransactionFormContent({
                 </FormItem>
               )}
             />
-            <SheetFooter>
-                <Button type="submit" className="w-full" disabled={isProcessing}>
+             <div className="pt-4">
+                 <Button type="submit" className="w-full" disabled={isProcessing}>
                     {transactionToEdit ? 'Simpan Perubahan' : 'Tambah Transaksi'}
                 </Button>
-            </SheetFooter>
+            </div>
           </form>
         </Form>
         <UIDialog open={isQuickGoalOpen} onOpenChange={setIsQuickGoalOpen}>
@@ -689,13 +706,22 @@ function TransactionFormContent({
 
 export default function TransactionForm(props: TransactionFormProps) {
   const { isOpen, onClose } = props;
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return null; // Don't render on the server
+  }
 
   // For larger screens, use a static form.
-  if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+  if (window.innerWidth >= 1024) {
     if (!isOpen) return null; // Don't render anything if not open
     return (
         <div className="p-6 border rounded-lg bg-card shadow-sm mb-8 relative">
-            <TransactionFormContent {...props} />
+            <TransactionFormContent {...props} isSheet={false} />
         </div>
     );
   }
@@ -705,7 +731,7 @@ export default function TransactionForm(props: TransactionFormProps) {
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
         <div className="py-4">
-            <TransactionFormContent {...props} />
+            <TransactionFormContent {...props} isSheet={true} />
         </div>
       </SheetContent>
     </Sheet>
