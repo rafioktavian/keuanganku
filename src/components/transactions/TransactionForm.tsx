@@ -34,7 +34,7 @@ import { db } from '@/lib/db';
 import Image from 'next/image';
 import { Dialog as UIDialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 
 
 const formSchema = z.object({
@@ -328,9 +328,6 @@ function TransactionFormContent({
 
     return (
         <>
-        <SheetHeader>
-            <SheetTitle>{transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}</SheetTitle>
-        </SheetHeader>
         {isProcessing && (
             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-card/80 backdrop-blur-sm">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -688,15 +685,18 @@ function TransactionFormContent({
 
 
 export default function TransactionForm(props: TransactionFormProps) {
-  const { isOpen, onClose } = props;
+  const { isOpen, onClose, transactionToEdit } = props;
 
   // For larger screens, use a static form.
   if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
     if (!isOpen) return null; // Don't render anything if not open
     return (
-      <div className="p-6 border rounded-lg bg-card shadow-sm mb-8">
-        <TransactionFormContent {...props} />
-      </div>
+        <div className="p-6 border rounded-lg bg-card shadow-sm mb-8 relative">
+             <SheetHeader>
+                <SheetTitle>{transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}</SheetTitle>
+             </SheetHeader>
+            <TransactionFormContent {...props} />
+        </div>
     );
   }
 
@@ -704,7 +704,12 @@ export default function TransactionForm(props: TransactionFormProps) {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
-        <TransactionFormContent {...props} />
+        <SheetHeader>
+            <SheetTitle>{transactionToEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}</SheetTitle>
+        </SheetHeader>
+        <div className="py-4">
+            <TransactionFormContent {...props} />
+        </div>
       </SheetContent>
     </Sheet>
   );
