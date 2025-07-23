@@ -33,6 +33,11 @@ export default function RootLayout({
             <main className="flex-grow">
               {children}
             </main>
+            <footer className="bg-muted text-muted-foreground py-4 mt-auto">
+                <div className="container mx-auto text-center text-sm">
+                    © {new Date().getFullYear()} <a href="https://rafioktavian.github.io/portfolio/" target="_blank" rel="noopener noreferrer" className="hover:text-primary font-medium">Rafi Oktavian</a>. All Rights Reserved.
+                </div>
+            </footer>
           </div>
           <Toaster />
         </ThemeProvider>
