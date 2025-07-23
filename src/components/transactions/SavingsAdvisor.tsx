@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles } from 'lucide-react';
 import type { Transaction } from '@/lib/types';
-import { getSavingsAdvice } from '@/ai/flows/savings-advisor';
+import { generateSavingsTips } from '@/ai/flows/savings-advisor';
 import { useToast } from '@/hooks/use-toast';
 
 interface SavingsAdvisorProps {
@@ -28,7 +28,6 @@ export default function SavingsAdvisor({ transactions }: SavingsAdvisorProps) {
   const hasTransactions = transactions && transactions.length > 0;
 
   const handleGetAdvice = async () => {
-    // This client-side check is a good practice but the main fix is on the server.
     if (!hasTransactions) {
       setAdvice("Belum ada data transaksi untuk dianalisis. Coba tambahkan beberapa transaksi terlebih dahulu ya!");
       return;
@@ -38,18 +37,21 @@ export default function SavingsAdvisor({ transactions }: SavingsAdvisorProps) {
     setAdvice(null);
 
     try {
-      // We only need a subset of fields for the prompt
-      const relevantData = transactions.map(t => ({
-        type: t.type,
-        amount: t.amount,
-        category: t.category,
-        description: t.description,
-      }));
+      const incomeData = transactions
+        .filter(t => t.type === 'income')
+        .map(t => `${t.category}: ${t.amount}`)
+        .join(', ');
 
-      const result = await getSavingsAdvice({
-        transactions: JSON.stringify(relevantData),
+      const expenseData = transactions
+        .filter(t => t.type === 'expense')
+        .map(t => `${t.category}: ${t.amount}`)
+        .join(', ');
+
+      const result = await generateSavingsTips({
+        incomePatterns: incomeData || 'Tidak ada pemasukan',
+        spendingPatterns: expenseData || 'Tidak ada pengeluaran',
       });
-      setAdvice(result);
+      setAdvice(result.savingsTips);
     } catch (error) {
       console.error('AI Error:', error);
       toast({
