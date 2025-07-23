@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, type ChangeEvent, useEffect } from 'react';
@@ -217,6 +218,7 @@ function TransactionFormContent({
 
     const processImage = async (photoDataUri: string) => {
         setIsProcessing(true);
+        setImagePreview(photoDataUri);
         try {
             const allCategories = await db.categories.toArray();
             const allFundSources = await db.fundSources.toArray();
@@ -278,7 +280,6 @@ function TransactionFormContent({
         reader.onload = (e) => {
             const photoDataUri = e.target?.result as string;
             if (photoDataUri) {
-                setImagePreview(photoDataUri);
                 processImage(photoDataUri);
             } else {
                  toast({
@@ -299,11 +300,10 @@ function TransactionFormContent({
         canvas.height = video.videoHeight;
         const context = canvas.getContext('2d');
         if (context) {
-        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-        const photoDataUri = canvas.toDataURL('image/jpeg');
-        setIsCameraOpen(false);
-        setImagePreview(photoDataUri);
-        processImage(photoDataUri);
+            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            const photoDataUri = canvas.toDataURL('image/jpeg');
+            setIsCameraOpen(false);
+            processImage(photoDataUri);
         }
     };
 
