@@ -14,7 +14,7 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
@@ -130,12 +130,13 @@ export default function AppHeader() {
                 <span className="sr-only">Buka Menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-full max-w-sm">
-              <div className="flex flex-col h-full">
-                <div className="border-b pb-4 mb-4">
+            <SheetContent side="left" className="w-full max-w-sm flex flex-col">
+              <SheetHeader className="border-b pb-4">
+                <SheetTitle className="text-left">
                   <Logo />
-                </div>
-                <div className="flex-grow">
+                </SheetTitle>
+              </SheetHeader>
+              <div className="flex-grow mt-4">
                   <nav className="flex flex-col gap-2">
                     <SheetClose asChild>
                       <Link
@@ -195,7 +196,6 @@ export default function AppHeader() {
                 <div className="mt-auto pt-4 border-t">
                   <ThemeToggle />
                 </div>
-              </div>
             </SheetContent>
           </Sheet>
         </div>
@@ -203,3 +203,5 @@ export default function AppHeader() {
     </header>
   );
 }
+
+    
