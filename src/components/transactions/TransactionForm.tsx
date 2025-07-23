@@ -216,6 +216,10 @@ function TransactionFormContent({
         }
     }, [selectedLink, transactionType, form]);
 
+    const triggerFileSelect = () => {
+        fileInputRef.current?.click();
+    };
+
     const processImage = async (photoDataUri: string) => {
         setIsProcessing(true);
         setImagePreview(photoDataUri);
@@ -242,7 +246,6 @@ function TransactionFormContent({
                 });
                 transactionDate = new Date();
             }
-            
             form.setValue('type', result.isIncome ? 'income' : 'expense');
             form.setValue('amount', result.amount);
             form.setValue('date', transactionDate);
@@ -274,22 +277,30 @@ function TransactionFormContent({
     
     const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const photoDataUri = e.target?.result as string;
-            if (photoDataUri) {
-                processImage(photoDataUri);
-            } else {
-                 toast({
-                    variant: 'destructive',
-                    title: 'Gagal Membaca File',
-                    description: 'Tidak dapat membaca file gambar yang dipilih.',
-                });
-            }
-        };
-        reader.readAsDataURL(file);
+        if (file) {
+          if (file.size > 5 * 1024 * 1024) { // 5MB limit
+              toast({
+                  variant: 'destructive',
+                  title: 'File terlalu besar',
+                  description: 'Ukuran gambar tidak boleh melebihi 5MB.',
+              });
+              return;
+          }
+          const reader = new FileReader();
+          reader.onload = () => {
+              const photoDataUri = reader.result as string;
+              if (photoDataUri) {
+                  processImage(photoDataUri);
+              } else {
+                   toast({
+                      variant: 'destructive',
+                      title: 'Gagal Membaca File',
+                      description: 'Tidak dapat membaca file gambar yang dipilih.',
+                  });
+              }
+          };
+          reader.readAsDataURL(file);
+      }
     };
     
     const handleCapture = () => {
@@ -360,7 +371,7 @@ function TransactionFormContent({
                     id="receipt-upload"
                 />
                 <div className="grid grid-cols-2 gap-4">
-                    <label htmlFor="receipt-upload" className="block">
+                    <button type="button" onClick={triggerFileSelect} disabled={isProcessing} htmlFor="receipt-upload" className="block">
                         <div className="border-2 border-dashed hover:border-primary transition-colors cursor-pointer p-4 h-full rounded-lg">
                             <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground h-full">
                                 <Upload className="h-8 w-8" />
@@ -370,7 +381,7 @@ function TransactionFormContent({
                                 <p className="text-xs text-center">Pilih dari galeri</p>
                             </div>
                         </div>
-                    </label>
+                    </button>
 
                     <UIDialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
                         <DialogTrigger asChild>
