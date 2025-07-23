@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AddDebtForm from './AddDebtForm';
 import DebtCard from './DebtCard';
+import { useToast } from '@/hooks/use-toast';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('id-ID', {
@@ -21,6 +22,7 @@ const formatCurrency = (value: number) => {
 
 export default function DebtsDashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
   
   const debts = useLiveQuery(
     () => db.debts.orderBy('dueDate').toArray(),
@@ -68,6 +70,44 @@ export default function DebtsDashboard() {
       await db.debts.delete(id);
     } catch (error) {
       console.error('Failed to delete debt record:', error);
+    }
+  };
+
+  const handleAddPayment = async (debtId: number, amount: number, fundSource: string) => {
+    const debt = await db.debts.get(debtId);
+    if (!debt) return;
+
+    try {
+        // 1. Update the debt record
+        const newCurrentAmount = debt.currentAmount - amount;
+        const newStatus = newCurrentAmount <= 0 ? 'paid' : 'unpaid';
+        await db.debts.update(debtId, {
+            currentAmount: Math.max(0, newCurrentAmount),
+            status: newStatus
+        });
+
+        // 2. Create a corresponding transaction
+        const transactionType = debt.type === 'debt' ? 'expense' : 'income';
+        const category = debt.type === 'debt' ? 'Pembayaran Utang' : 'Penerimaan Piutang';
+        const description = `${debt.type === 'debt' ? 'Pembayaran utang kepada' : 'Penerimaan piutang dari'} ${debt.personName}`;
+
+        await db.transactions.add({
+            type: transactionType,
+            amount: amount,
+            date: new Date().toISOString(),
+            category: category,
+            fundSource: fundSource,
+            description: description,
+            linkedTo: `debt_${debtId}`
+        });
+
+    } catch (error) {
+        console.error('Failed to add payment:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Gagal',
+            description: 'Gagal mencatat pembayaran.'
+        });
     }
   };
 
@@ -142,6 +182,7 @@ export default function DebtsDashboard() {
                         debt={debt}
                         onUpdateStatus={handleUpdateStatus}
                         onDelete={handleDeleteDebt}
+                        onAddPayment={handleAddPayment}
                     />
                 ))}
                 </div>
@@ -163,6 +204,7 @@ export default function DebtsDashboard() {
                         debt={debt}
                         onUpdateStatus={handleUpdateStatus}
                         onDelete={handleDeleteDebt}
+                        onAddPayment={handleAddPayment}
                     />
                 ))}
                 </div>

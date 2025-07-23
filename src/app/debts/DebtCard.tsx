@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, {useState} from 'react';
 import type { Debt } from '@/lib/types';
 import {
   Card,
@@ -15,15 +15,19 @@ import { format } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { differenceInDays, formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, User, Calendar, CheckCircle2, Circle } from 'lucide-react';
+import { Trash2, User, Calendar, CheckCircle2, Circle, Landmark, Wallet } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import AddPaymentForm from './AddPaymentForm';
+
 
 interface DebtCardProps {
   debt: Debt;
   onUpdateStatus: (id: number, status: 'paid' | 'unpaid') => void;
   onDelete: (id: number) => void;
+  onAddPayment: (debtId: number, amount: number, fundSource: string) => void;
 }
 
 const formatCurrency = (amount: number) => {
@@ -34,7 +38,8 @@ const formatCurrency = (amount: number) => {
     }).format(amount);
 };
 
-export default function DebtCard({ debt, onUpdateStatus, onDelete }: DebtCardProps) {
+export default function DebtCard({ debt, onUpdateStatus, onDelete, onAddPayment }: DebtCardProps) {
+  const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
   const isDebt = debt.type === 'debt';
   const daysLeft = differenceInDays(debt.dueDate, new Date());
   
@@ -114,10 +119,19 @@ export default function DebtCard({ debt, onUpdateStatus, onDelete }: DebtCardPro
         </div>
       </CardContent>
        <CardFooter className="flex flex-col items-stretch gap-2">
+            <Dialog open={isPaymentFormOpen} onOpenChange={setIsPaymentFormOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline" disabled={debt.status === 'paid'}>
+                        <Landmark className="mr-2 h-4 w-4"/>
+                        {isDebt ? 'Bayar Utang' : 'Terima Pembayaran'}
+                    </Button>
+                </DialogTrigger>
+                <AddPaymentForm debt={debt} onAddPayment={onAddPayment} onClose={() => setIsPaymentFormOpen(false)} />
+            </Dialog>
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button onClick={handleToggleStatus} variant="secondary" disabled={debt.status === 'paid'}>
+                        <Button onClick={handleToggleStatus} variant="secondary" size="sm" disabled={debt.status === 'paid'}>
                             {debt.status === 'unpaid' ? (
                                 <>
                                 <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
@@ -132,7 +146,7 @@ export default function DebtCard({ debt, onUpdateStatus, onDelete }: DebtCardPro
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Ubah status utang/piutang secara manual</p>
+                        <p>Tandai lunas tanpa membuat transaksi (misal: diikhlaskan)</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
