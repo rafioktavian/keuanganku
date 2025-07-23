@@ -28,6 +28,7 @@ export default function SavingsAdvisor({ transactions }: SavingsAdvisorProps) {
   const hasTransactions = transactions && transactions.length > 0;
 
   const handleGetAdvice = async () => {
+    // This client-side check is a good practice but the main fix is on the server.
     if (!hasTransactions) {
       setAdvice("Belum ada data transaksi untuk dianalisis. Coba tambahkan beberapa transaksi terlebih dahulu ya!");
       return;
