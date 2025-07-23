@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Defines a Genkit flow for providing personalized savings advice.
@@ -31,22 +32,17 @@ const prompt = ai.definePrompt({
   name: 'savingsAdvisorPrompt',
   input: { schema: SavingsAdviceInputSchema },
   output: { schema: SavingsAdviceOutputSchema },
-  prompt: `You are a friendly and encouraging financial advisor. Your goal is to provide personalized savings tips based on the user's transaction history.
+  prompt: `You are a friendly and encouraging financial advisor. Your goal is to provide personalized savings tips based on the user's transaction history. The entire response MUST be in Bahasa Indonesia.
 
 Analyze the following transactions:
 {{{transactions}}}
 
-**IMPORTANT INSTRUCTIONS:**
-1.  **Analyze Spending Habits**: Based on the transactions, identify the top 2-3 spending categories.
+**CRITICAL INSTRUCTIONS:**
+1.  **Analyze Spending Habits**: Identify the top 2-3 spending categories.
 2.  **Provide Personalized Tips**: Give 1-2 specific, simple, and actionable tips based on the analysis. For example, if "Makanan & Minuman" is high, suggest "Anda bisa coba mengurangi jajan di luar dan membawa bekal."
 3.  **Tone**: Always be encouraging and positive.
-4.  **Language**: The entire response MUST be in Bahasa Indonesia.
-5.  **Format**: The response MUST be a single string of plain text, not markdown.
-6.  **EMPTY DATA**: If the 'transactions' input is an empty array '[]', you MUST return the exact string: "Belum ada data transaksi untuk dianalisis. Coba tambahkan beberapa transaksi terlebih dahulu ya!"
-
-**Example Responses:**
-*   **Good Savings:** "Kerja bagus! Anda berhasil menabung bulan ini. Pengeluaran terbesar Anda ada di kategori Transportasi. Mungkin Anda bisa mencoba menggunakan transportasi umum lebih sering untuk menghemat."
-*   **Overspending:** "Tidak apa-apa, mari kita lihat beberapa cara untuk berhemat. Pengeluaran untuk Belanja cukup tinggi. Coba buat daftar belanja sebelum pergi agar lebih fokus."
+4.  **Format**: The response MUST be a single string of plain text, not markdown.
+5.  **HANDLE EMPTY DATA**: This is the most important rule. If the 'transactions' input is an empty JSON array '[]', you MUST return the exact string: "Belum ada data transaksi untuk dianalisis. Coba tambahkan beberapa transaksi terlebih dahulu ya!". Do not return null or an empty response.
 
 Now, generate a response based on the provided transaction data.`,
 });
@@ -58,15 +54,15 @@ const savingsAdvisorFlow = ai.defineFlow(
     outputSchema: SavingsAdviceOutputSchema,
   },
   async (input) => {
-    // Fallback for empty transactions on the server-side as well
-    if (input.transactions === '[]') {
+    // Server-side guard for empty transactions, as a failsafe
+    if (input.transactions.trim() === '[]') {
         return "Belum ada data transaksi untuk dianalisis. Coba tambahkan beberapa transaksi terlebih dahulu ya!";
     }
       
     const { output } = await prompt(input);
 
+    // Final fallback in case the model still returns null despite the strong prompt instructions
     if (!output) {
-      // Fallback in case the model still returns null despite the prompt instructions
       return "Tidak dapat menghasilkan saran saat ini. Silakan coba lagi nanti.";
     }
     

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -24,8 +25,10 @@ export default function SavingsAdvisor({ transactions }: SavingsAdvisorProps) {
   const [advice, setAdvice] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const hasTransactions = transactions && transactions.length > 0;
+
   const handleGetAdvice = async () => {
-    if (transactions.length === 0) {
+    if (!hasTransactions) {
       setAdvice("Belum ada data transaksi untuk dianalisis. Coba tambahkan beberapa transaksi terlebih dahulu ya!");
       return;
     }
@@ -79,12 +82,14 @@ export default function SavingsAdvisor({ transactions }: SavingsAdvisorProps) {
           <p className="text-sm text-foreground whitespace-pre-wrap">{advice}</p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Klik tombol di bawah untuk mendapatkan tips menabung cerdas dari AI.
+             {hasTransactions 
+                ? "Klik tombol di bawah untuk mendapatkan tips menabung cerdas dari AI."
+                : "Belum ada data transaksi untuk dianalisis. Tambahkan beberapa transaksi untuk memulai."}
           </p>
         )}
       </CardContent>
       <CardFooter>
-        <Button onClick={handleGetAdvice} disabled={isLoading} className="w-full">
+        <Button onClick={handleGetAdvice} disabled={isLoading || !hasTransactions} className="w-full">
             {isLoading ? (
                 'Menganalisis...'
             ) : advice ? (
