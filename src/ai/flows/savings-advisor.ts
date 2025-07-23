@@ -36,25 +36,19 @@ const prompt = ai.definePrompt({
 Analyze the following transactions:
 {{{transactions}}}
 
-Your task is to generate a short, actionable, and encouraging message for the user.
+**IMPORTANT INSTRUCTIONS:**
+1.  **Analyze Spending Habits**: Based on the transactions, identify the top 2-3 spending categories.
+2.  **Provide Personalized Tips**: Give 1-2 specific, simple, and actionable tips based on the analysis. For example, if "Makanan & Minuman" is high, suggest "Anda bisa coba mengurangi jajan di luar dan membawa bekal."
+3.  **Tone**: Always be encouraging and positive.
+4.  **Language**: The entire response MUST be in Bahasa Indonesia.
+5.  **Format**: The response MUST be a single string of plain text, not markdown.
+6.  **EMPTY DATA**: If the 'transactions' input is an empty array '[]', you MUST return the exact string: "Belum ada data transaksi untuk dianalisis. Coba tambahkan beberapa transaksi terlebih dahulu ya!"
 
-Follow these steps:
-1.  **Calculate Total Income and Expenses**: Sum up the amounts for all 'income' and 'expense' transactions.
-2.  **Analyze Spending Habits**: Identify the top 2-3 spending categories.
-3.  **Check Savings Status**:
-    *   **If income > expenses**: The user is saving money! Start with a positive and praiseworthy comment like "Kerja bagus! Anda berhasil menabung bulan ini." or "Luar biasa! Pengelolaan keuangan Anda sangat baik."
-    *   **If expenses > income**: The user is overspending. Be gentle and encouraging. Start with a supportive tone, like "Tidak apa-apa, mari kita lihat beberapa cara untuk meningkatkan tabungan bulan depan."
-    *   **If no income**: Assume they are tracking expenses only. Focus on spending habits.
-4.  **Provide Personalized Tips**:
-    *   Based on the top spending categories, give 1-2 specific, simple, and actionable tips. For example, if "Makanan & Minuman" is a high category, suggest "Anda bisa coba mengurangi jajan di luar dan membawa bekal dari rumah beberapa kali seminggu."
-    *   Keep the tips realistic and easy to implement.
-5.  **Concluding Remark**: End with a positive and motivational sentence, like "Terus semangat, ya!" or "Sedikit demi sedikit, lama-lama menjadi bukit."
+**Example Responses:**
+*   **Good Savings:** "Kerja bagus! Anda berhasil menabung bulan ini. Pengeluaran terbesar Anda ada di kategori Transportasi. Mungkin Anda bisa mencoba menggunakan transportasi umum lebih sering untuk menghemat."
+*   **Overspending:** "Tidak apa-apa, mari kita lihat beberapa cara untuk berhemat. Pengeluaran untuk Belanja cukup tinggi. Coba buat daftar belanja sebelum pergi agar lebih fokus."
 
-**IMPORTANT**:
-*   Keep the entire response concise, friendly, and in Bahasa Indonesia.
-*   The response should be a single string of text.
-*   Do not return markdown, just plain text.
-`,
+Now, generate a response based on the provided transaction data.`,
 });
 
 const savingsAdvisorFlow = ai.defineFlow(
@@ -64,10 +58,16 @@ const savingsAdvisorFlow = ai.defineFlow(
     outputSchema: SavingsAdviceOutputSchema,
   },
   async (input) => {
+    // Fallback for empty transactions on the server-side as well
+    if (input.transactions === '[]') {
+        return "Belum ada data transaksi untuk dianalisis. Coba tambahkan beberapa transaksi terlebih dahulu ya!";
+    }
+      
     const { output } = await prompt(input);
 
     if (!output) {
-      throw new Error("AI failed to produce an output.");
+      // Fallback in case the model still returns null despite the prompt instructions
+      return "Tidak dapat menghasilkan saran saat ini. Silakan coba lagi nanti.";
     }
     
     return output;

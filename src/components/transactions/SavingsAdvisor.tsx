@@ -27,16 +27,6 @@ export default function SavingsAdvisor({ transactions }: SavingsAdvisorProps) {
   const handleGetAdvice = async () => {
     setIsLoading(true);
     setAdvice(null);
-    
-    if (transactions.length === 0) {
-        toast({
-            variant: 'destructive',
-            title: 'Data Kurang',
-            description: 'Belum ada data transaksi untuk dianalisis.',
-        });
-        setIsLoading(false);
-        return;
-    }
 
     try {
       // We only need a subset of fields for the prompt
@@ -89,7 +79,7 @@ export default function SavingsAdvisor({ transactions }: SavingsAdvisorProps) {
         )}
       </CardContent>
       <CardFooter>
-        <Button onClick={handleGetAdvice} disabled={isLoading} className="w-full">
+        <Button onClick={handleGetAdvice} disabled={isLoading || transactions.length === 0} className="w-full">
             {isLoading ? (
                 'Menganalisis...'
             ) : advice ? (
