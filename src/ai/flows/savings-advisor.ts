@@ -38,11 +38,12 @@ Analyze the following transactions:
 {{{transactions}}}
 
 **CRITICAL INSTRUCTIONS:**
-1.  **Analyze Spending Habits**: Identify the top 2-3 spending categories.
-2.  **Provide Personalized Tips**: Give 1-2 specific, simple, and actionable tips based on the analysis. For example, if "Makanan & Minuman" is high, suggest "Anda bisa coba mengurangi jajan di luar dan membawa bekal."
-3.  **Tone**: Always be encouraging and positive.
-4.  **Format**: The response MUST be a single string of plain text, not markdown.
-5.  **HANDLE EMPTY DATA**: This is the most important rule. If the 'transactions' input is an empty JSON array '[]', you MUST return the exact string: "Belum ada data transaksi untuk dianalisis. Coba tambahkan beberapa transaksi terlebih dahulu ya!". Do not return null or an empty response.
+1.  **HANDLE EMPTY DATA**: This is the most important rule. If the 'transactions' input is an empty JSON array '[]', you MUST return the exact string: "Belum ada data transaksi untuk dianalisis. Coba tambahkan beberapa transaksi terlebih dahulu ya!". Do not return null or an empty response.
+2.  **Analyze Spending Habits**: Identify the top 2-3 spending categories.
+3.  **Provide Personalized Tips**: Give 1-2 specific, simple, and actionable tips based on the analysis. For example, if "Makanan & Minuman" is high, suggest "Anda bisa coba mengurangi jajan di luar dan membawa bekal."
+4.  **Tone**: Always be encouraging and positive.
+5.  **Format**: The response MUST be a single string of plain text, not markdown.
+
 
 Now, generate a response based on the provided transaction data.`,
 });
