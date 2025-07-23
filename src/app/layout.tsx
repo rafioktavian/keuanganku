@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import AppHeader from '@/components/layout/AppHeader';
 import { ThemeProvider } from '@/components/layout/ThemeProvider';
+import GoogleAnalytics from '@/components/layout/GoogleAnalytics';
 
 export const metadata: Metadata = {
   title: 'KeuanganKu',
@@ -17,6 +18,7 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
+        <GoogleAnalytics />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></link>
