@@ -25,6 +25,11 @@ export default function SavingsAdvisor({ transactions }: SavingsAdvisorProps) {
   const { toast } = useToast();
 
   const handleGetAdvice = async () => {
+    if (transactions.length === 0) {
+      setAdvice("Belum ada data transaksi untuk dianalisis. Coba tambahkan beberapa transaksi terlebih dahulu ya!");
+      return;
+    }
+
     setIsLoading(true);
     setAdvice(null);
 
@@ -79,7 +84,7 @@ export default function SavingsAdvisor({ transactions }: SavingsAdvisorProps) {
         )}
       </CardContent>
       <CardFooter>
-        <Button onClick={handleGetAdvice} disabled={isLoading || transactions.length === 0} className="w-full">
+        <Button onClick={handleGetAdvice} disabled={isLoading} className="w-full">
             {isLoading ? (
                 'Menganalisis...'
             ) : advice ? (
