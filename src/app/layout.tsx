@@ -6,8 +6,45 @@ import { ThemeProvider } from '@/components/layout/ThemeProvider';
 import GoogleAnalytics from '@/components/layout/GoogleAnalytics';
 
 export const metadata: Metadata = {
-  title: 'KeuanganKu',
-  description: 'Aplikasi pencatat keuangan pribadi Anda.',
+  title: 'KeuanganKu - Aplikasi Pelacak Keuangan Pribadi',
+  description: 'KeuanganKu adalah aplikasi intuitif untuk melacak pemasukan, pengeluaran, tujuan tabungan, investasi, dan utang/piutang. Ambil kendali atas keuangan pribadi Anda dengan mudah.',
+  keywords: ['keuangan pribadi', 'lacak pengeluaran', 'manajemen uang', 'anggaran', 'investasi', 'tujuan tabungan', 'utang piutang', 'aplikasi keuangan'],
+  authors: [{ name: 'Rafi Oktavian', url: 'https://rafioktavian.github.io/portfolio/' }],
+  creator: 'Rafi Oktavian',
+  publisher: 'Rafi Oktavian',
+  openGraph: {
+    title: 'KeuanganKu - Pelacak Keuangan Pribadi',
+    description: 'Ambil kendali atas keuangan pribadi Anda dengan aplikasi KeuanganKu yang mudah digunakan.',
+    url: 'https://keuanganku-gb3jq.web.app', // Ganti dengan URL produksi Anda
+    siteName: 'KeuanganKu',
+    images: [
+      {
+        url: '/og-image.png', // Pastikan Anda membuat gambar ini dan menaruhnya di folder public
+        width: 1200,
+        height: 630,
+        alt: 'Tampilan Aplikasi KeuanganKu',
+      },
+    ],
+    locale: 'id_ID',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'KeuanganKu - Pelacak Keuangan Pribadi',
+    description: 'Lacak pengeluaran, atur anggaran, dan capai tujuan keuangan Anda dengan KeuanganKu.',
+    images: ['/twitter-image.png'], // Pastikan Anda membuat gambar ini dan menaruhnya di folder public
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function RootLayout({
