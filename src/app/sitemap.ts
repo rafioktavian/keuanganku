@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
  
 export default function sitemap(): MetadataRoute.Sitemap {
   // Ganti dengan URL produksi Anda
-  const baseUrl = 'https://keuanganku-gb3jq.web.app';
+  const baseUrl = 'https://track-keuanganku.vercel.app';
 
   return [
     {

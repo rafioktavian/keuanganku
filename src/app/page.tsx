@@ -204,21 +204,34 @@ export default function Home() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 flex flex-col gap-8">
-          <div className="lg:hidden">
+          <div className="lg:hidden block">
             <TransactionForm 
               onAddTransaction={handleAddTransaction}
               onUpdateTransaction={handleUpdateTransaction}
               onClose={() => setIsFormOpen(false)}
               isOpen={isFormOpen}
               transactionToEdit={editingTransaction}
-              key={editingTransaction ? editingTransaction.id : 'add'}
+              key={editingTransaction ? `edit-${editingTransaction.id}` : 'add'}
+            />
+            <Filters
+              onTypeChange={setFilterType}
+              onDateChange={setFilterDateRange}
+              currentType={filterType}
+              currentDateRange={filterDateRange}
+              onAddTransactionClick={openAddForm}
+            />
+            <TransactionList 
+              transactions={filteredTransactions} 
+              isLoading={isLoading}
+              onEdit={openEditForm}
+              onDelete={handleDeleteTransaction}
             />
           </div>
           <SavingsAdvisor transactions={transactions} />
           <CategorySummary transactions={filteredTransactions} />
         </div>
         <div className="lg:col-span-2">
-          <div className="hidden lg:block">
+          <div className="lg:block hidden">
              <TransactionForm 
               onAddTransaction={handleAddTransaction}
               onUpdateTransaction={handleUpdateTransaction}
@@ -227,20 +240,20 @@ export default function Home() {
               transactionToEdit={editingTransaction}
               key={editingTransaction ? `edit-${editingTransaction.id}` : 'add-desktop'}
             />
+            <Filters
+              onTypeChange={setFilterType}
+              onDateChange={setFilterDateRange}
+              currentType={filterType}
+              currentDateRange={filterDateRange}
+              onAddTransactionClick={openAddForm}
+            />
+            <TransactionList 
+              transactions={filteredTransactions} 
+              isLoading={isLoading}
+              onEdit={openEditForm}
+              onDelete={handleDeleteTransaction}
+            />
           </div>
-          <Filters
-            onTypeChange={setFilterType}
-            onDateChange={setFilterDateRange}
-            currentType={filterType}
-            currentDateRange={filterDateRange}
-            onAddTransactionClick={openAddForm}
-          />
-          <TransactionList 
-            transactions={filteredTransactions} 
-            isLoading={isLoading}
-            onEdit={openEditForm}
-            onDelete={handleDeleteTransaction}
-          />
         </div>
       </div>
     </div>
