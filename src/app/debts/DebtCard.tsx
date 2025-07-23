@@ -15,12 +15,13 @@ import { format } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { differenceInDays, formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, User, Calendar, CheckCircle2, Circle, Landmark, Wallet } from 'lucide-react';
+import { Trash2, User, Calendar, CheckCircle2, Circle, Landmark, Wallet, Edit } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AddPaymentForm from './AddPaymentForm';
+import AddDebtForm from './AddDebtForm';
 
 
 interface DebtCardProps {
@@ -28,6 +29,7 @@ interface DebtCardProps {
   onUpdateStatus: (id: number, status: 'paid' | 'unpaid') => void;
   onDelete: (id: number) => void;
   onAddPayment: (debtId: number, amount: number, fundSource: string) => void;
+  onUpdateDebt: (debt: Omit<Debt, 'id' | 'status' | 'currentAmount'>, id: number) => void;
 }
 
 const formatCurrency = (amount: number) => {
@@ -38,8 +40,9 @@ const formatCurrency = (amount: number) => {
     }).format(amount);
 };
 
-export default function DebtCard({ debt, onUpdateStatus, onDelete, onAddPayment }: DebtCardProps) {
+export default function DebtCard({ debt, onUpdateStatus, onDelete, onAddPayment, onUpdateDebt }: DebtCardProps) {
   const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const isDebt = debt.type === 'debt';
   const daysLeft = differenceInDays(debt.dueDate, new Date());
   
@@ -49,6 +52,13 @@ export default function DebtCard({ debt, onUpdateStatus, onDelete, onAddPayment 
         onUpdateStatus(debt.id, newStatus);
     }
   }
+
+  const handleEditSubmit = (updatedDebt: Omit<Debt, 'id' | 'status' | 'currentAmount'>, id?: number) => {
+    if (id !== undefined) {
+      onUpdateDebt(updatedDebt, id);
+    }
+    setIsEditFormOpen(false);
+  };
 
   const getTimeLeft = () => {
     if (debt.status === 'paid') return <Badge variant="secondary" className="bg-green-100 text-green-800">Lunas</Badge>;
@@ -73,27 +83,38 @@ export default function DebtCard({ debt, onUpdateStatus, onDelete, onAddPayment 
                     Jatuh tempo: {format(debt.dueDate, 'dd MMM yyyy', { locale: localeID })}
                 </CardDescription>
             </div>
-             <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Anda yakin?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tindakan ini tidak dapat dibatalkan. Ini akan menghapus catatan ini secara permanen.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Batal</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => onDelete(debt.id!)} className="bg-destructive hover:bg-destructive/90">
-                    Ya, Hapus
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+             <div className="flex items-center">
+                <Dialog open={isEditFormOpen} onOpenChange={setIsEditFormOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                        <Edit className="h-4 w-4 text-blue-500" />
+                    </Button>
+                  </DialogTrigger>
+                  <AddDebtForm onSubmitDebt={handleEditSubmit} onClose={() => setIsEditFormOpen(false)} initialData={debt}/>
+                </Dialog>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Anda yakin?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tindakan ini tidak dapat dibatalkan. Ini akan menghapus catatan ini secara permanen.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Batal</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => onDelete(debt.id!)} className="bg-destructive hover:bg-destructive/90">
+                        Ya, Hapus
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+            </div>
         </div>
       </CardHeader>
       <CardContent className="flex-grow space-y-4">

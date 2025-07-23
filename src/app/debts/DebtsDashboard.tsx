@@ -21,7 +21,7 @@ const formatCurrency = (value: number) => {
 };
 
 export default function DebtsDashboard() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
   
   const debts = useLiveQuery(
@@ -34,19 +34,41 @@ export default function DebtsDashboard() {
     dueDate: new Date(d.dueDate),
   }));
 
-  const handleAddDebt = async (debt: Omit<Debt, 'id'>) => {
+  const handleSubmitDebt = async (debtData: Omit<Debt, 'id' | 'status' | 'currentAmount'>, id?: number) => {
     try {
-      await db.debts.add({
-        ...debt,
-        amount: debt.amount,
-        currentAmount: debt.amount,
-        dueDate: debt.dueDate.toISOString(),
-      });
-      setIsDialogOpen(false);
+      if (id) {
+        // Edit mode
+        const existingDebt = await db.debts.get(id);
+        if (existingDebt) {
+          // Keep the currentAmount and status, only update other fields.
+          await db.debts.update(id, {
+            ...debtData,
+            dueDate: debtData.dueDate.toISOString(),
+            amount: existingDebt.amount, // amount is immutable
+            currentAmount: existingDebt.currentAmount,
+            status: existingDebt.status,
+          });
+          toast({ title: 'Sukses', description: 'Catatan berhasil diperbarui.' });
+        }
+      } else {
+        // Add mode
+        await db.debts.add({
+          ...debtData,
+          amount: debtData.amount,
+          currentAmount: debtData.amount,
+          status: 'unpaid',
+          dueDate: debtData.dueDate.toISOString(),
+        });
+        toast({ title: 'Sukses', description: 'Catatan baru berhasil ditambahkan.' });
+      }
+      setIsFormOpen(false);
+      // We don't need to manually refetch, useLiveQuery handles it.
     } catch (error) {
-      console.error('Failed to add debt record:', error);
+      console.error('Failed to submit debt record:', error);
+      toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal menyimpan catatan.' });
     }
   };
+
 
   const handleUpdateStatus = async (id: number, status: 'paid' | 'unpaid') => {
     try {
@@ -132,14 +154,14 @@ export default function DebtsDashboard() {
     <div className="space-y-6">
        <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Ringkasan</h2>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle />
               Tambah Catatan
             </Button>
           </DialogTrigger>
-          <AddDebtForm onAddDebt={handleAddDebt} />
+          <AddDebtForm onSubmitDebt={handleSubmitDebt} onClose={() => setIsFormOpen(false)} />
         </Dialog>
       </div>
 
@@ -183,6 +205,7 @@ export default function DebtsDashboard() {
                         onUpdateStatus={handleUpdateStatus}
                         onDelete={handleDeleteDebt}
                         onAddPayment={handleAddPayment}
+                        onUpdateDebt={handleSubmitDebt}
                     />
                 ))}
                 </div>
@@ -205,6 +228,7 @@ export default function DebtsDashboard() {
                         onUpdateStatus={handleUpdateStatus}
                         onDelete={handleDeleteDebt}
                         onAddPayment={handleAddPayment}
+                        onUpdateDebt={handleSubmitDebt}
                     />
                 ))}
                 </div>

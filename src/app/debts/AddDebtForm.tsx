@@ -33,6 +33,10 @@ import { id as localeID } from 'date-fns/locale';
 import type { Debt } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { useEffect } from 'react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
+
 
 const formSchema = z.object({
   type: z.enum(['debt', 'receivable'], { required_error: 'Tipe harus dipilih.' }),
@@ -43,7 +47,9 @@ const formSchema = z.object({
 });
 
 interface AddDebtFormProps {
-  onAddDebt: (debt: Omit<Debt, 'id' | 'status' | 'currentAmount'>) => void;
+  onSubmitDebt: (debt: Omit<Debt, 'id' | 'status' | 'currentAmount'>, id?: number) => void;
+  onClose: () => void;
+  initialData?: Debt | null;
 }
 
 const formatToRupiah = (value: number | string) => {
@@ -56,29 +62,41 @@ const formatToRupiah = (value: number | string) => {
 
 const parseFromRupiah = (value: string) => Number(value.replace(/[^0-9]/g, ''));
 
-export default function AddDebtForm({ onAddDebt }: AddDebtFormProps) {
+export default function AddDebtForm({ onSubmitDebt, onClose, initialData = null }: AddDebtFormProps) {
+  const isEditMode = !!initialData;
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      type: 'debt',
-      personName: '',
-      amount: 0,
-      dueDate: new Date(),
-      description: '',
-    },
   });
 
+  useEffect(() => {
+    if (isEditMode && initialData) {
+      form.reset({
+        ...initialData,
+        dueDate: new Date(initialData.dueDate),
+      });
+    } else {
+      form.reset({
+        type: 'debt',
+        personName: '',
+        amount: 0,
+        dueDate: new Date(),
+        description: '',
+      });
+    }
+  }, [initialData, form, isEditMode]);
+
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    onAddDebt({ ...values, status: 'unpaid', currentAmount: values.amount });
-    form.reset();
+    onSubmitDebt(values, initialData?.id);
   };
 
   return (
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Catatan Utang/Piutang Baru</DialogTitle>
+        <DialogTitle>{isEditMode ? 'Edit Catatan Utang/Piutang' : 'Catatan Utang/Piutang Baru'}</DialogTitle>
         <DialogDescription>
-          Tambah catatan baru untuk utang atau piutang.
+          {isEditMode ? 'Perbarui detail catatan Anda.' : 'Tambah catatan baru untuk utang atau piutang.'}
         </DialogDescription>
       </DialogHeader>
       <Form {...form}>
@@ -93,7 +111,9 @@ export default function AddDebtForm({ onAddDebt }: AddDebtFormProps) {
                   <RadioGroup
                     onValueChange={field.onChange}
                     defaultValue={field.value}
+                    value={field.value}
                     className="flex space-x-4"
+                    disabled={isEditMode}
                   >
                     <FormItem className="flex items-center space-x-2 space-y-0">
                       <FormControl>
@@ -109,6 +129,7 @@ export default function AddDebtForm({ onAddDebt }: AddDebtFormProps) {
                     </FormItem>
                   </RadioGroup>
                 </FormControl>
+                 {isEditMode && <p className="text-xs text-muted-foreground">Tipe tidak dapat diubah saat mengedit.</p>}
                 <FormMessage />
               </FormItem>
             )}
@@ -137,8 +158,10 @@ export default function AddDebtForm({ onAddDebt }: AddDebtFormProps) {
                     placeholder="Rp 100.000"
                     value={formatToRupiah(field.value || 0)}
                     onChange={e => field.onChange(parseFromRupiah(e.target.value))}
+                    disabled={isEditMode}
                   />
                 </FormControl>
+                {isEditMode && <p className="text-xs text-muted-foreground">Jumlah tidak dapat diubah. Sisa pembayaran dapat dikelola melalui tombol "Bayar".</p>}
                 <FormMessage />
               </FormItem>
             )}
@@ -196,7 +219,8 @@ export default function AddDebtForm({ onAddDebt }: AddDebtFormProps) {
             )}
           />
           <DialogFooter>
-            <Button type="submit">Simpan Catatan</Button>
+            <Button type="button" variant="ghost" onClick={onClose}>Batal</Button>
+            <Button type="submit">{isEditMode ? 'Simpan Perubahan' : 'Simpan Catatan'}</Button>
           </DialogFooter>
         </form>
       </Form>
