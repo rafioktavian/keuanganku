@@ -15,11 +15,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'KeuanganKu - Pelacak Keuangan Pribadi',
     description: 'Ambil kendali atas keuangan pribadi Anda dengan aplikasi KeuanganKu yang mudah digunakan.',
-    url: 'https://keuanganku-gb3jq.web.app', // Ganti dengan URL produksi Anda
+    url: 'https://track-keuanganku.vercel.app/',
     siteName: 'KeuanganKu',
     images: [
       {
-        url: '/og-image.png', // Pastikan Anda membuat gambar ini dan menaruhnya di folder public
+        url: '/og-image.png',
         width: 1200,
         height: 630,
         alt: 'Tampilan Aplikasi KeuanganKu',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'KeuanganKu - Pelacak Keuangan Pribadi',
     description: 'Lacak pengeluaran, atur anggaran, dan capai tujuan keuangan Anda dengan KeuanganKu.',
-    images: ['/twitter-image.png'], // Pastikan Anda membuat gambar ini dan menaruhnya di folder public
+    images: ['/og-image.png'],
   },
   robots: {
     index: true,
