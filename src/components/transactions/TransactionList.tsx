@@ -81,93 +81,89 @@ export default function TransactionList({ transactions, isLoading = false, onEdi
           Ekspor
         </Button>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="w-auto h-auto overflow-x-auto">
-          <div className="block overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tanggal</TableHead>
-                  <TableHead>Deskripsi</TableHead>
-                  <TableHead>Kategori</TableHead>
-                  <TableHead className="text-right">Jumlah</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array.from({ length: 5 }).map((_, index) => (
-                      <TableRow key={index}>
-                          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                          <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                          <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                          <TableCell className="text-right"><Skeleton className="h-5 w-28 ml-auto" /></TableCell>
-                          <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                      </TableRow>
-                  ))
-                ) : transactions.length > 0 ? (
-                  transactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell className="font-medium whitespace-nowrap">
-                        {format(transaction.date, 'dd MMM yyyy', { locale: id })}
-                      </TableCell>
-                      <TableCell>{transaction.description}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{transaction.category}</Badge>
-                      </TableCell>
-                      <TableCell
-                        className={cn(
-                          'text-right font-semibold whitespace-nowrap',
-                          transaction.type === 'income'
-                            ? 'text-green-600'
-                            : 'text-red-600'
-                        )}
-                      >
-                        {transaction.type === 'income' ? '+' : '-'}
-                        {formatCurrency(transaction.amount)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                          <div className="flex justify-end items-center gap-2">
-                              <Button variant="ghost" size="icon" onClick={() => onEdit(transaction)}>
-                                  <Edit className="h-4 w-4 text-blue-500" />
-                              </Button>
-                              <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="icon">
-                                          <Trash2 className="h-4 w-4 text-destructive" />
-                                      </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                      <AlertDialogTitle>Anda yakin?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                          Tindakan ini akan menghapus transaksi secara permanen. Jika transaksi ini terhubung dengan Tujuan/Investasi/Utang, jumlahnya akan dikembalikan.
-                                      </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                      <AlertDialogCancel>Batal</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => onDelete(transaction)} className="bg-destructive hover:bg-destructive/90">
-                                          Ya, Hapus
-                                      </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                  </AlertDialogContent>
-                              </AlertDialog>
-                          </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      Tidak ada transaksi.
-                    </TableCell>
+      <div className="block overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tanggal</TableHead>
+              <TableHead>Deskripsi</TableHead>
+              <TableHead>Kategori</TableHead>
+              <TableHead className="text-right">Jumlah</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                  <TableRow key={index}>
+                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-30" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-5 w-28 ml-auto" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </ScrollArea>
-      </CardContent>
+              ))
+            ) : transactions.length > 0 ? (
+              transactions.map((transaction) => (
+                <TableRow key={transaction.id}>
+                  <TableCell className="font-medium whitespace-nowrap">
+                    {format(transaction.date, 'dd MMM yyyy', { locale: id })}
+                  </TableCell>
+                  <TableCell>{transaction.description}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{transaction.category}</Badge>
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      'text-right font-semibold whitespace-nowrap',
+                      transaction.type === 'income'
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                    )}
+                  >
+                    {transaction.type === 'income' ? '+' : '-'}
+                    {formatCurrency(transaction.amount)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                      <div className="flex justify-end items-center gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => onEdit(transaction)}>
+                              <Edit className="h-4 w-4 text-blue-500" />
+                          </Button>
+                          <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                  <AlertDialogTitle>Anda yakin?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      Tindakan ini akan menghapus transaksi secara permanen. Jika transaksi ini terhubung dengan Tujuan/Investasi/Utang, jumlahnya akan dikembalikan.
+                                  </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => onDelete(transaction)} className="bg-destructive hover:bg-destructive/90">
+                                      Ya, Hapus
+                                  </AlertDialogAction>
+                                  </AlertDialogFooter>
+                              </AlertDialogContent>
+                          </AlertDialog>
+                      </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center">
+                  Tidak ada transaksi.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </Card>
   );
 }
