@@ -27,7 +27,7 @@ const navLinks = [
 
 const settingsLinks = [
   { href: '/data-master', label: 'Data Master', description: 'Kelola kategori & sumber dana.' },
-  { href: '/settings', label: 'Pengaturan App', description: 'Sinkronisasi data & pengaturan lain.' },
+  // { href: '/settings', label: 'Pengaturan App', description: 'Sinkronisasi data & pengaturan lain.' },
 ];
 
 const Logo = () => (
