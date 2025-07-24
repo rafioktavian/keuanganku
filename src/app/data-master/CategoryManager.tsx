@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/db';
-import type { Category, TransactionType } from '@/lib/types';
+import type { Category } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -39,8 +39,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Nama kategori harus diisi.'),
@@ -50,6 +52,7 @@ const categorySchema = z.object({
 export default function CategoryManager() {
   const { toast } = useToast();
   const categories = useLiveQuery(() => db.categories.toArray(), []);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   const form = useForm<z.infer<typeof categorySchema>>({
     resolver: zodResolver(categorySchema),
@@ -58,13 +61,29 @@ export default function CategoryManager() {
 
   const onSubmit = async (values: z.infer<typeof categorySchema>) => {
     try {
-      await db.categories.add(values);
-      form.reset();
-      toast({ title: 'Sukses', description: 'Kategori berhasil ditambahkan.' });
+      if (editingCategory) {
+        await db.categories.update(editingCategory.id!, values);
+        toast({ title: 'Sukses', description: 'Kategori berhasil diperbarui.' });
+        setEditingCategory(null);
+      } else {
+        await db.categories.add(values);
+        toast({ title: 'Sukses', description: 'Kategori berhasil ditambahkan.' });
+      }
+      form.reset({ name: '', type: 'expense' });
     } catch (error) {
       console.error(error);
-      toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal menambahkan kategori.' });
+      toast({ variant: 'destructive', title: 'Gagal', description: 'Gagal menyimpan kategori.' });
     }
+  };
+
+  const handleEditClick = (category: Category) => {
+    setEditingCategory(category);
+    form.reset(category);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCategory(null);
+    form.reset({ name: '', type: 'expense' });
   };
   
   const deleteCategory = async (id?: number) => {
@@ -82,8 +101,8 @@ export default function CategoryManager() {
     <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>Tambah Kategori Baru</CardTitle>
-          <CardDescription>Buat kategori pemasukan atau pengeluaran baru.</CardDescription>
+          <CardTitle>{editingCategory ? 'Edit Kategori' : 'Tambah Kategori Baru'}</CardTitle>
+          <CardDescription>{editingCategory ? `Mengedit: ${editingCategory.name}` : 'Buat kategori pemasukan atau pengeluaran baru.'}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -107,7 +126,7 @@ export default function CategoryManager() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipe Transaksi</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Pilih Tipe" />
@@ -122,7 +141,12 @@ export default function CategoryManager() {
                   </FormItem>
                 )}
               />
-              <Button type="submit">Tambah</Button>
+              <div className="flex gap-2">
+                {editingCategory && (
+                  <Button type="button" variant="outline" onClick={handleCancelEdit}>Batal</Button>
+                )}
+                <Button type="submit" className="flex-grow">{editingCategory ? 'Simpan' : 'Tambah'}</Button>
+              </div>
             </form>
           </Form>
         </CardContent>
@@ -149,9 +173,30 @@ export default function CategoryManager() {
                     <TableCell className="font-medium">{category.name}</TableCell>
                     <TableCell>{category.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => deleteCategory(category.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                       <Button variant="ghost" size="icon" onClick={() => handleEditClick(category)}>
+                        <Edit className="h-4 w-4 text-blue-500" />
                       </Button>
+                       <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                           <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Anda yakin?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tindakan ini akan menghapus kategori secara permanen.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteCategory(category.id)} className="bg-destructive hover:bg-destructive/90">
+                              Ya, Hapus
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))}
