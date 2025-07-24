@@ -105,33 +105,35 @@ export default function FundSourceManager() {
           <CardDescription>Berikut adalah daftar sumber dana yang sudah ada.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nama Sumber Dana</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {fundSources?.map((source) => (
-                <TableRow key={source.id}>
-                  <TableCell className="font-medium">{source.name}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => deleteFundSource(source.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!fundSources || fundSources.length === 0 && (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                    <TableCell colSpan={2} className="h-24 text-center">
-                        Belum ada sumber dana.
-                    </TableCell>
+                  <TableHead>Nama Sumber Dana</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {fundSources?.map((source) => (
+                  <TableRow key={source.id}>
+                    <TableCell className="font-medium">{source.name}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => deleteFundSource(source.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!fundSources || fundSources.length === 0 && (
+                  <TableRow>
+                      <TableCell colSpan={2} className="h-24 text-center">
+                          Belum ada sumber dana.
+                      </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -134,35 +134,37 @@ export default function CategoryManager() {
           <CardDescription>Berikut adalah daftar kategori yang sudah ada.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nama Kategori</TableHead>
-                <TableHead>Tipe</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {categories?.map((category) => (
-                <TableRow key={category.id}>
-                  <TableCell className="font-medium">{category.name}</TableCell>
-                  <TableCell>{category.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => deleteCategory(category.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!categories || categories.length === 0 && (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">
-                        Belum ada kategori.
-                    </TableCell>
+                  <TableHead>Nama Kategori</TableHead>
+                  <TableHead>Tipe</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {categories?.map((category) => (
+                  <TableRow key={category.id}>
+                    <TableCell className="font-medium">{category.name}</TableCell>
+                    <TableCell>{category.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => deleteCategory(category.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!categories || categories.length === 0 && (
+                  <TableRow>
+                      <TableCell colSpan={3} className="h-24 text-center">
+                          Belum ada kategori.
+                      </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
