@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -9,6 +10,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  Dialog as UIDialog,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -21,11 +24,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -33,9 +31,7 @@ import { id as localeID } from 'date-fns/locale';
 import type { Debt } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
-import { useEffect } from 'react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 
 const formSchema = z.object({
@@ -64,6 +60,7 @@ const parseFromRupiah = (value: string) => Number(value.replace(/[^0-9]/g, ''));
 
 export default function AddDebtForm({ onSubmitDebt, onClose, initialData = null }: AddDebtFormProps) {
   const isEditMode = !!initialData;
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -172,35 +169,38 @@ export default function AddDebtForm({ onSubmitDebt, onClose, initialData = null 
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Tanggal Jatuh Tempo</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={'outline'}
-                        className={cn(
-                          'pl-3 text-left font-normal',
-                          !field.value && 'text-muted-foreground'
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, 'PPP', { locale: localeID })
-                        ) : (
-                          <span>Pilih tanggal</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      locale={localeID}
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                 <UIDialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                    <DialogTrigger asChild>
+                        <FormControl>
+                        <Button
+                            variant={'outline'}
+                            className={cn(
+                            'pl-3 text-left font-normal',
+                            !field.value && 'text-muted-foreground'
+                            )}
+                        >
+                            {field.value ? (
+                            format(field.value, 'PPP', { locale: localeID })
+                            ) : (
+                            <span>Pilih tanggal</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                        </FormControl>
+                    </DialogTrigger>
+                    <DialogContent className="w-auto">
+                        <Calendar
+                            locale={localeID}
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => {
+                                field.onChange(date);
+                                setIsDatePickerOpen(false);
+                            }}
+                            initialFocus
+                        />
+                    </DialogContent>
+                </UIDialog>
                 <FormMessage />
               </FormItem>
             )}

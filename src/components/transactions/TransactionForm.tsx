@@ -110,6 +110,8 @@ function TransactionFormContent({
     const [receivables, setReceivables] = useState<Debt[]>([]);
     
     const [isQuickGoalOpen, setIsQuickGoalOpen] = useState(false);
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -496,36 +498,39 @@ function TransactionFormContent({
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Tanggal</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={'outline'}
-                              className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, 'PPP', { locale: localeID })
-                              ) : (
-                                <span>Pilih tanggal</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            locale={localeID}
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date > new Date() || date < new Date('2000-01-01')}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <UIDialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                          <DialogTrigger asChild>
+                               <FormControl>
+                                <Button
+                                    variant={'outline'}
+                                    className={cn(
+                                    'w-full pl-3 text-left font-normal',
+                                    !field.value && 'text-muted-foreground'
+                                    )}
+                                >
+                                    {field.value ? (
+                                    format(field.value, 'PPP', { locale: localeID })
+                                    ) : (
+                                    <span>Pilih tanggal</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                                </FormControl>
+                          </DialogTrigger>
+                          <DialogContent className="w-auto">
+                             <Calendar
+                                locale={localeID}
+                                mode="single"
+                                selected={field.value}
+                                onSelect={(date) => {
+                                    field.onChange(date);
+                                    setIsDatePickerOpen(false);
+                                }}
+                                disabled={(date) => date > new Date() || date < new Date('2000-01-01')}
+                                initialFocus
+                             />
+                          </DialogContent>
+                      </UIDialog>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -9,6 +10,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  Dialog as UIDialog,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -21,11 +24,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -40,6 +38,7 @@ import { id as localeID } from 'date-fns/locale';
 import type { Investment, FundSource } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
+import { useState } from 'react';
 
 
 const formSchema = z.object({
@@ -69,6 +68,7 @@ const formatToRupiah = (value: number | string) => {
 const parseFromRupiah = (value: string) => Number(value.replace(/[^0-9]/g, ''));
 
 export default function AddInvestmentForm({ onAddInvestment, fundSources }: AddInvestmentFormProps) {
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -203,8 +203,8 @@ export default function AddInvestmentForm({ onAddInvestment, fundSources }: AddI
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Tanggal Pembelian</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
+                <UIDialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                  <DialogTrigger asChild>
                     <FormControl>
                       <Button
                         variant={'outline'}
@@ -221,18 +221,21 @@ export default function AddInvestmentForm({ onAddInvestment, fundSources }: AddI
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  </DialogTrigger>
+                  <DialogContent className="w-auto p-0">
                     <Calendar
                       locale={localeID}
                       mode="single"
                       selected={field.value}
-                      onSelect={field.onChange}
+                      onSelect={(date) => {
+                        field.onChange(date);
+                        setIsDatePickerOpen(false);
+                      }}
                       disabled={(date) => date > new Date()}
                       initialFocus
                     />
-                  </PopoverContent>
-                </Popover>
+                  </DialogContent>
+                </UIDialog>
                 <FormMessage />
               </FormItem>
             )}
