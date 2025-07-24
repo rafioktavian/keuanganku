@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/layout/ThemeProvider';
 import GoogleAnalytics from '@/components/layout/GoogleAnalytics';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://track-keuanganku.vercel.app'),
   title: 'KeuanganKu - Aplikasi Pelacak Keuangan Pribadi',
   description: 'KeuanganKu adalah aplikasi intuitif untuk melacak pemasukan, pengeluaran, tujuan tabungan, investasi, dan utang/piutang. Ambil kendali atas keuangan pribadi Anda dengan mudah.',
   keywords: ['keuangan pribadi', 'lacak pengeluaran', 'manajemen uang', 'anggaran', 'investasi', 'tujuan tabungan', 'utang piutang', 'aplikasi keuangan'],

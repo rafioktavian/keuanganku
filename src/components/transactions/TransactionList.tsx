@@ -82,9 +82,9 @@ export default function TransactionList({ transactions, isLoading = false, onEdi
         </Button>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[600px] w-full">
+        <ScrollArea className="w-auto h-auto overflow-x-auto">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="overflow-x-auto">
               <TableHeader>
                 <TableRow>
                   <TableHead>Tanggal</TableHead>
