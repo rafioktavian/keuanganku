@@ -3,7 +3,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import type { Transaction, CashFlowData } from '@/lib/types';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format, startOfMonth } from 'date-fns';
@@ -22,6 +22,19 @@ export default function CashFlowReport() {
     () => db.transactions.orderBy('date').toArray(),
     []
   );
+
+  const [initialBalance, setInitialBalance] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = window.localStorage.getItem('initialBalance');
+    if (stored !== null) {
+      const parsed = parseFloat(stored);
+      if (!Number.isNaN(parsed)) {
+        setInitialBalance(parsed);
+      }
+    }
+  }, []);
 
   const { cashFlowData, summary } = useMemo(() => {
     if (!transactions) {
@@ -57,6 +70,8 @@ export default function CashFlowReport() {
 
     return { cashFlowData, summary: { totalIncome, totalExpense, netFlow } };
   }, [transactions]);
+
+  const currentBalance = summary.netFlow + initialBalance;
   
   if (transactions === undefined) {
     return <Skeleton className="h-96 w-full" />;
@@ -93,6 +108,17 @@ export default function CashFlowReport() {
           <CardContent>
             <div className={`text-2xl font-bold ${summary.netFlow >= 0 ? 'text-green-500' : 'text-red-500'}`}>{formatCurrency(summary.netFlow)}</div>
             <p className="text-xs text-muted-foreground">Selisih pemasukan dan pengeluaran</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Saldo Saat Ini</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(currentBalance)}</div>
+            <p className="text-xs text-muted-foreground">
+              Dihitung dari saldo awal + arus kas bersih.
+            </p>
           </CardContent>
         </Card>
       </div>
