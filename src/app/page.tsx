@@ -1,15 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useMemo, useEffect } from 'react';
-import type { Transaction, TransactionType, DateRange } from '@/lib/types';
-import TransactionForm from '@/components/transactions/TransactionForm';
-import TransactionList from '@/components/transactions/TransactionList';
-import CategorySummary from '@/components/transactions/CategorySummary';
-import Filters from '@/components/transactions/Filters';
-import { db } from '@/lib/db';
-import SavingsAdvisor from '@/components/transactions/SavingsAdvisor';
-import { endOfDay, startOfDay } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
+import Link from "next/link";
+import { useState, useMemo, useEffect } from "react";
+import type { Transaction, TransactionType, DateRange } from "@/lib/types";
+import TransactionForm from "@/components/transactions/TransactionForm";
+import TransactionList from "@/components/transactions/TransactionList";
+import CategorySummary from "@/components/transactions/CategorySummary";
+import Filters from "@/components/transactions/Filters";
+import { db } from "@/lib/db";
+import SavingsAdvisor from "@/components/transactions/SavingsAdvisor";
+import { endOfDay, startOfDay } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -200,6 +202,13 @@ export default function Home() {
       <header className="mb-8">
         <h1 className="text-4xl font-bold text-center text-foreground font-headline">KeuanganKu</h1>
         <p className="text-center text-muted-foreground mt-2">Lacak arus masuk dan keluar keuangan Anda dengan mudah.</p>
+        <div className="mt-4 flex justify-center">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/settings">
+              Input Saldo Awal
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
