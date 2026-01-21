@@ -21,6 +21,18 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
+const formatInputValue = (raw: string) => {
+  const digitsOnly = raw.replace(/\D/g, '');
+  if (!digitsOnly) {
+    return '';
+  }
+  const numeric = parseInt(digitsOnly, 10);
+  if (Number.isNaN(numeric)) {
+    return '';
+  }
+  return formatCurrency(numeric);
+};
+
 export default function InitialBalanceCard() {
   const { toast } = useToast();
   const [inputValue, setInputValue] = useState<string>('');
@@ -34,7 +46,7 @@ export default function InitialBalanceCard() {
     if (stored !== null) {
       const parsed = parseFloat(stored);
       if (!Number.isNaN(parsed)) {
-        setInputValue(stored);
+        setInputValue(formatCurrency(parsed));
         setSavedBalance(parsed);
       }
     }
@@ -44,8 +56,9 @@ export default function InitialBalanceCard() {
   const handleSave = () => {
     if (typeof window === 'undefined') return;
 
-    const numeric = parseFloat(inputValue.replace(',', '.'));
-    if (Number.isNaN(numeric) || numeric < 0) {
+    const digitsOnly = inputValue.replace(/\D/g, '');
+    const numeric = parseInt(digitsOnly, 10);
+    if (!digitsOnly || Number.isNaN(numeric) || numeric < 0) {
       toast({
         variant: 'destructive',
         title: 'Input tidak valid',
@@ -77,13 +90,11 @@ export default function InitialBalanceCard() {
             Saldo awal (dalam Rupiah)
           </label>
           <Input
-            type="number"
-            min={0}
-            step="1000"
-            inputMode="decimal"
-            placeholder="contoh: 5000000"
+            type="text"
+            inputMode="numeric"
+            placeholder="contoh: Rp 5.000.000"
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => setInputValue(formatInputValue(e.target.value))}
           />
         </div>
         {!isLoading && savedBalance !== null && (
@@ -103,4 +114,3 @@ export default function InitialBalanceCard() {
     </Card>
   );
 }
-
